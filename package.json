@@ -1,0 +1,12 @@
+{
+  "name": "nmpticketing",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix nmpticketing",
+    "build": "npm run build --prefix nmpticketing",
+    "build:dev": "npm run build:dev --prefix nmpticketing",
+    "preview": "npm run preview --prefix nmpticketing",
+    "lint": "npm run lint --prefix nmpticketing",
+    "format": "npm run format --prefix nmpticketing"
+  }
+}
