@@ -1,12 +1,33 @@
 {
+
   "name": "nmpticketing",
+
   "private": true,
+
   "scripts": {
-    "dev": "npm run dev --prefix nmpticketing",
-    "build": "npm run build --prefix nmpticketing",
-    "build:dev": "npm run build:dev --prefix nmpticketing",
-    "preview": "npm run preview --prefix nmpticketing",
-    "lint": "npm run lint --prefix nmpticketing",
-    "format": "npm run format --prefix nmpticketing"
+
+    "setup": "powershell -ExecutionPolicy Bypass -File ./scripts/setup.ps1",
+
+    "dev": "powershell -ExecutionPolicy Bypass -File ./scripts/start-dev.ps1",
+    "dev:web": "npm run dev --prefix frontend",
+
+    "start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-dev.ps1",
+
+    "dev:api": "npm run dev --prefix backend",
+
+    "seed": "npm run seed --prefix backend",
+
+    "build": "npm run build --prefix frontend",
+
+    "build:dev": "npm run build:dev --prefix frontend",
+
+    "preview": "npm run preview --prefix frontend",
+
+    "lint": "npm run lint --prefix frontend",
+
+    "format": "npm run format --prefix frontend"
+
   }
+
 }
+
