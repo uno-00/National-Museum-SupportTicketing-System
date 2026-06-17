@@ -24,10 +24,3 @@ export async function listRecentActivities(limit = 20) {
     .limit(limit)
     .lean();
 }
-
-export async function listActivitiesForEntity(entityType: string, entityId: string, limit = 30) {
-  return ActivityLog.find({ entityType, entityId })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
-}

@@ -1,18 +1,21 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Inbox, LayoutDashboard } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { api } from "@/lib/api/client";
 import { ensurePortalRole } from "@/lib/portal-guard";
+import { clientTicketNotifications } from "@/lib/notifications";
 import {
   CLIENT_DASHBOARD,
-  CLIENT_FEEDBACK,
-  CLIENT_FORMS,
   CLIENT_REQUESTS,
-  CLIENT_SUBMIT,
   isClientRole,
+  isPortalLoginPath,
 } from "@/lib/navigation";
 
 export const Route = createFileRoute("/client")({
   ssr: false,
   beforeLoad: async ({ location }) => {
+    if (isPortalLoginPath(location.pathname)) return;
     await ensurePortalRole(isClientRole, "client");
     if (location.pathname === "/client" || location.pathname === "/client/") {
       throw redirect({ to: CLIENT_DASHBOARD, replace: true });
@@ -22,16 +25,34 @@ export const Route = createFileRoute("/client")({
 });
 
 function ClientLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const { data: tickets, isLoading: notificationsLoading } = useQuery({
+    queryKey: ["my-tickets"],
+    queryFn: () => api.myTickets(),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
+    staleTime: 0,
+  });
+
+  const notifications = clientTicketNotifications(tickets?.items ?? []);
+  const actionCount = notifications.length;
+
+  if (isPortalLoginPath(pathname)) {
+    return <Outlet />;
+  }
 
   return (
     <DashboardShell
       portalTitle="Client Portal"
+      notifications={notifications}
+      notificationsLoading={notificationsLoading}
+      notificationsViewAllTo={CLIENT_REQUESTS}
+      notificationsEmptyMessage="No updates on your requests"
       nav={[
-        { to: CLIENT_DASHBOARD, label: "Dashboard" },
-        { to: CLIENT_FORMS, label: "Available Forms" },
-        { to: CLIENT_SUBMIT, label: "Submit Request" },
-        { to: CLIENT_REQUESTS, label: "My Requests" },
-        { to: CLIENT_FEEDBACK, label: "Feedback" },
+        { to: CLIENT_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
+        { to: CLIENT_REQUESTS, label: "My Requests", icon: Inbox, badge: actionCount || undefined },
       ]}
     >
       <Outlet />

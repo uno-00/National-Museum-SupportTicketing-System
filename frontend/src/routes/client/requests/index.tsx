@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
+import {
+  ActionLink,
+  DataPanel,
+  EmptyState,
+  LoadingRows,
+  StatusBadge,
+  WorkspacePageHeader,
+} from "@/components/layout/workspace-ui";
+import { CLIENT_DASHBOARD, CLIENT_SUBMIT } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export const Route = createFileRoute("/client/requests/")({
   component: MyRequestsPage,
@@ -12,45 +23,79 @@ function MyRequestsPage() {
     queryFn: () => api.myTickets(),
   });
 
+  const items = data?.items ?? [];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">My Requests</h1>
-      <div className="overflow-hidden rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">Ticket</th>
-              <th className="px-4 py-3">Form</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Submitted</th>
-              <th className="px-4 py-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center">Loading…</td></tr>
-            ) : (data?.items ?? []).length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No requests yet.</td></tr>
-            ) : (
-              data?.items.map((t) => (
-                <tr key={t._id} className="border-t">
-                  <td className="px-4 py-3 font-mono text-xs">{t.ticketNumber}</td>
-                  <td className="px-4 py-3">{t.formTitle}</td>
-                  <td className="px-4 py-3 capitalize">{t.status.replace(/_/g, " ")}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(t.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link to="/client/requests/$ticketId" params={{ ticketId: t._id }} className="text-maroon hover:underline">
-                      View
-                    </Link>
+    <div className="page-shell">
+      <WorkspacePageHeader
+        title="My Requests"
+        description="All tickets linked to your account. Only you can view and manage these submissions."
+        actions={<ActionLink to={CLIENT_SUBMIT}>New request</ActionLink>}
+      />
+
+      <DataPanel title={`${items.length} request${items.length === 1 ? "" : "s"}`}>
+        <div className="overflow-x-auto">
+          <table className="data-table w-full text-sm">
+            <thead className="text-left">
+              <tr>
+                <th className="px-4 py-3 sm:px-5">Ticket</th>
+                <th className="px-4 py-3 sm:px-5">Form</th>
+                <th className="px-4 py-3 sm:px-5">Status</th>
+                <th className="px-4 py-3 sm:px-5">Submitted</th>
+                <th className="px-4 py-3 sm:px-5">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingRows />
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="No requests yet"
+                      description="Start by choosing a published form and submitting your technical assistance request."
+                      action={
+                        <div className="flex flex-wrap justify-center gap-2">
+                          <ActionLink to={CLIENT_SUBMIT}>Submit request</ActionLink>
+                          <ActionLink to={CLIENT_DASHBOARD} variant="outline">
+                            Back to dashboard
+                          </ActionLink>
+                        </div>
+                      }
+                    />
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                items.map((t) => (
+                  <tr key={t._id} className="border-t border-border/70">
+                    <td className="px-4 py-3.5 font-mono text-xs sm:px-5">{t.ticketNumber}</td>
+                    <td className="px-4 py-3.5 font-medium sm:px-5">{t.formTitle}</td>
+                    <td className="px-4 py-3.5 sm:px-5">
+                      <StatusBadge status={t.status} />
+                    </td>
+                    <td className="px-4 py-3.5 text-muted-foreground sm:px-5">
+                      {new Date(t.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-4 py-3.5 sm:px-5">
+                      <Link
+                        to="/client/requests/$ticketId"
+                        params={{ ticketId: t._id }}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shadow-sm")}
+                      >
+                        View details
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </DataPanel>
     </div>
   );
 }

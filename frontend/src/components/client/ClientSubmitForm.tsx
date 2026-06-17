@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import type { FormRecord, LiveFormField } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth";
+import { CLIENT_REQUESTS } from "@/lib/navigation";
 
 type ClientSubmitFormProps = {
   initialFormId?: string;
@@ -16,6 +18,8 @@ type ClientSubmitFormProps = {
 
 export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedFormId, setSelectedFormId] = useState(initialFormId ?? "");
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [uploading, setUploading] = useState(false);
@@ -56,6 +60,8 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
         description: `Ticket ${res.ticket.ticketNumber} is pending admin approval.`,
       });
       setAnswers({});
+      void queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
+      void navigate({ to: CLIENT_REQUESTS });
     },
     onError: (err: Error) => toast.error(err.message || "Submission failed"),
   });
@@ -86,28 +92,36 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
 
   if (formsLoading) {
     return (
-      <p className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading forms…
-      </p>
+      <div className="form-panel flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading available forms…
+      </div>
     );
   }
 
   const forms = formsData?.items ?? [];
   if (forms.length === 0) {
-    return <p className="text-muted-foreground">No published forms available yet.</p>;
+    return (
+      <div className="form-panel py-12 text-center text-sm text-muted-foreground">
+        No published forms are available yet. Please check back later or contact your administrator.
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Submit Request</h1>
-        <p className="text-sm text-muted-foreground">Select a form and complete the fields below.</p>
+      <div className="page-hero">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Submit Request</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Submitting as <strong className="text-foreground">{user?.name ?? user?.email ?? "your account"}</strong>.
+          This request will appear in your list only.
+        </p>
       </div>
 
-      <div className="space-y-2">
-        <Label>Form</Label>
-        <select
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+      <div className="form-panel space-y-5">
+        <div className="space-y-2">
+          <Label>Select form</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
           value={selectedFormId}
           onChange={(e) => {
             setSelectedFormId(e.target.value);
@@ -122,10 +136,10 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
       </div>
 
       {selectedFormId && formLoading ? (
-        <p className="text-sm text-muted-foreground">Loading form…</p>
+        <p className="text-sm text-muted-foreground">Loading form fields…</p>
       ) : form ? (
         <form
-          className="space-y-5"
+          className="space-y-5 border-t border-border/70 pt-5"
           onSubmit={(e) => {
             e.preventDefault();
             submitMutation.mutate(form);
@@ -141,11 +155,12 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
               uploading={uploading}
             />
           ))}
-          <Button type="submit" disabled={submitMutation.isPending}>
+          <Button type="submit" disabled={submitMutation.isPending} className="shadow-sm">
             {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
           </Button>
         </form>
       ) : null}
+      </div>
     </div>
   );
 }

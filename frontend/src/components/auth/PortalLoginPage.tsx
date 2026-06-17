@@ -36,7 +36,7 @@ export function PortalLoginPage({
   wrongRoleMessage,
 }: PortalLoginPageProps) {
   const navigate = useNavigate();
-  const { isAuthenticated, login, logout, user } = useAuth();
+  const { sessionReady, login, logout, user, activeSlot, sessions } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,42 +44,40 @@ export function PortalLoginPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const apiHealth = useApiHealth();
 
-  const waitingForUser = isAuthenticated && !user;
-  const wrongPortalSession = isAuthenticated && user && !validateRole(user);
-  const sessionReady =
-    isAuthenticated &&
-    !waitingForUser &&
-    !wrongPortalSession &&
-    Boolean(user && validateRole(user));
+  const portalUser = activeSlot ? sessions[activeSlot] : null;
+  const hasValidPortalSession = Boolean(portalUser && validateRole(portalUser));
+  const wrongPortalSession = Boolean(portalUser && !validateRole(portalUser));
 
-  // Wrong account type — clear session so username/password always shows
+  const sessionReadyForPortal = !activeSlot || sessionReady;
+  const waitingForUser = hasValidPortalSession && !user && !sessionReadyForPortal;
+
+  // Wrong account type for this portal — clear only this portal's session
   useEffect(() => {
-    if (wrongPortalSession) {
-      logout();
+    if (wrongPortalSession && activeSlot) {
+      logout(activeSlot);
     }
-  }, [wrongPortalSession, logout]);
+  }, [wrongPortalSession, logout, activeSlot]);
 
   useEffect(() => {
-    if (stayOnPage || !isAuthenticated || waitingForUser || wrongPortalSession) return;
+    if (stayOnPage || !sessionReadyForPortal || !hasValidPortalSession) return;
     if (user && validateRole(user)) {
       void navigate({ to: successTo, replace: true });
     }
   }, [
-    isAuthenticated,
+    hasValidPortalSession,
     navigate,
+    sessionReadyForPortal,
     successTo,
     stayOnPage,
     user,
     validateRole,
-    waitingForUser,
-    wrongPortalSession,
   ]);
 
-  if (stayOnPage && sessionReady) return null;
+  if (stayOnPage && hasValidPortalSession && user && validateRole(user)) return null;
 
   if (
     !stayOnPage &&
-    (waitingForUser || wrongPortalSession || (isAuthenticated && user && validateRole(user)))
+    (waitingForUser || (hasValidPortalSession && user && validateRole(user)))
   ) {
     return (
       <div className="login-page flex min-h-screen items-center justify-center">

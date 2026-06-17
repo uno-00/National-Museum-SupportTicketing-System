@@ -1,6 +1,25 @@
 import type { ApiUser } from "@/lib/api/types";
+import type { PortalSlot } from "@/lib/sessions";
 
 export const LOGIN = "/login";
+
+export const ADMIN_LOGIN = "/admin/login";
+export const RECORDS_LOGIN = "/records/login";
+export const CLIENT_LOGIN = "/client/login";
+
+export function loginForSlot(slot: PortalSlot): string {
+  if (slot === "admin") return ADMIN_LOGIN;
+  if (slot === "records") return RECORDS_LOGIN;
+  return CLIENT_LOGIN;
+}
+
+export function isPortalLoginPath(pathname: string): boolean {
+  return (
+    pathname === ADMIN_LOGIN ||
+    pathname === RECORDS_LOGIN ||
+    pathname === CLIENT_LOGIN
+  );
+}
 
 export const ADMIN_DASHBOARD = "/admin/dashboard";
 export const ADMIN_FORMS = "/admin/forms";
@@ -15,10 +34,8 @@ export const RECORDS_PUBLISHED = "/records/published";
 export const RECORDS_ACTIVITY = "/records/activity";
 
 export const CLIENT_DASHBOARD = "/client/dashboard";
-export const CLIENT_FORMS = "/client/forms";
 export const CLIENT_SUBMIT = "/client/submit";
 export const CLIENT_REQUESTS = "/client/requests";
-export const CLIENT_FEEDBACK = "/client/feedback";
 
 export function isAdminRole(role: string | undefined) {
   return role === "admin";

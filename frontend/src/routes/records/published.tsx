@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import {
+  DataPanel,
+  EmptyState,
+  LoadingRows,
+  WorkspacePageHeader,
+} from "@/components/layout/workspace-ui";
 import { api } from "@/lib/api/client";
 import { useRecordsSession } from "@/lib/use-portal-session";
 
@@ -15,37 +21,54 @@ function PublishedFormsPage() {
     enabled: canQuery,
   });
 
+  const items = data?.items ?? [];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Published Forms</h1>
-      <div className="overflow-hidden rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">No.</th>
-              <th className="px-4 py-3">Form Description</th>
-              <th className="px-4 py-3">Ref</th>
-              <th className="px-4 py-3">Effectivity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center">Loading…</td></tr>
-            ) : (data?.items ?? []).length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No published forms.</td></tr>
-            ) : (
-              data?.items.map((row, i) => (
-                <tr key={row._id} className="border-t">
-                  <td className="px-4 py-3">{i + 1}</td>
-                  <td className="px-4 py-3 font-medium">{row.title}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{row.refNumber}</td>
-                  <td className="px-4 py-3">{row.effectivity}</td>
+    <div className="page-shell">
+      <WorkspacePageHeader
+        title="Published Forms"
+        description="Live TA forms available for clients to submit requests."
+      />
+
+      <DataPanel title={`${items.length} published form${items.length === 1 ? "" : "s"}`}>
+        <div className="overflow-x-auto">
+          <table className="data-table w-full text-sm">
+            <thead className="text-left">
+              <tr>
+                <th className="px-4 py-3 sm:px-5">Form</th>
+                <th className="px-4 py-3 sm:px-5">Ref</th>
+                <th className="px-4 py-3 sm:px-5">Effectivity</th>
+                <th className="px-4 py-3 sm:px-5">Version</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!canQuery || isLoading ? (
+                <LoadingRows cols={4} />
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={4}>
+                    <EmptyState
+                      title="No published forms"
+                      description="Approved forms from Pending Forms will appear here once published."
+                    />
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                items.map((row) => (
+                  <tr key={row._id} className="border-t border-border/70">
+                    <td className="px-4 py-3.5 sm:px-5 font-medium">{row.title}</td>
+                    <td className="px-4 py-3.5 sm:px-5 font-mono text-xs text-muted-foreground">
+                      {row.refNumber}
+                    </td>
+                    <td className="px-4 py-3.5 sm:px-5">{row.effectivity}</td>
+                    <td className="px-4 py-3.5 sm:px-5 text-muted-foreground">{row.version}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </DataPanel>
     </div>
   );
 }

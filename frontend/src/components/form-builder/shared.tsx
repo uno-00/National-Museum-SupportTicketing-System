@@ -22,13 +22,13 @@ export function WizardField({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
+    <div className="block">
       <div className="mb-1.5 flex items-baseline justify-between">
         <span className="text-sm text-muted-foreground">{label}</span>
         {hint ? <span className="text-[10px] text-muted-foreground">{hint}</span> : null}
       </div>
       {children}
-    </label>
+    </div>
   );
 }
 
@@ -40,25 +40,5 @@ export function SectionHeader({ title, subtitle }: { title: string; subtitle?: s
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       ) : null}
     </div>
-  );
-}
-
-export function Pill({
-  children,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "dark";
-}) {
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-medium ${
-        tone === "dark"
-          ? "bg-ink text-paper shadow-sm"
-          : "bg-maroon/8 text-maroon ring-1 ring-maroon/15"
-      }`}
-    >
-      {children}
-    </span>
   );
 }

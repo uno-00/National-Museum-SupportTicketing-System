@@ -1,9 +1,5 @@
-import { format, parseISO } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EffectivityDatePicker } from "@/components/form-builder/EffectivityDatePicker";
 import type { FormDraft } from "@/lib/form-builder-store";
-import { cn } from "@/lib/utils";
 import { inputCls, SectionHeader, WizardCard, WizardField } from "../shared";
 
 type GeneralStepProps = {
@@ -32,31 +28,11 @@ export function GeneralStep({ draft, update }: GeneralStepProps) {
         <WizardField label="Reference number" hint="Auto-generated">
           <input className={`${inputCls} font-mono`} value={draft.refNumber} readOnly />
         </WizardField>
-        <WizardField label="Date effectivity" hint="Required before submit">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  inputCls,
-                  "flex items-center justify-between text-left",
-                  !draft.effectivity && "text-muted-foreground",
-                )}
-              >
-                {draft.effectivity ? format(parseISO(draft.effectivity), "PPP") : "Pick a date"}
-                <CalendarIcon className="h-4 w-4 opacity-60" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={draft.effectivity ? parseISO(draft.effectivity) : undefined}
-                onSelect={(d) => update({ effectivity: d ? format(d, "yyyy-MM-dd") : "" })}
-                initialFocus
-                className={cn("pointer-events-auto p-3")}
-              />
-            </PopoverContent>
-          </Popover>
+        <WizardField label="Date effectivity" hint="Pick any date">
+          <EffectivityDatePicker
+            value={draft.effectivity}
+            onChange={(effectivity) => update({ effectivity })}
+          />
         </WizardField>
         <WizardField label="Version number">
           <input

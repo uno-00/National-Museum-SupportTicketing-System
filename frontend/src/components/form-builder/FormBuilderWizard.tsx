@@ -3,11 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
+import { WorkspacePageHeader } from "@/components/layout/workspace-ui";
 import { Progress } from "@/components/ui/progress";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
-import { dashboardForRole, isAdminRole, LOGIN } from "@/lib/navigation";
+import { ADMIN_LOGIN, dashboardForRole, isAdminRole } from "@/lib/navigation";
 import { draftToApiBodyWithUploads } from "@/lib/form-draft-api";
 import { newDraft, type FormDraft } from "@/lib/form-builder-store";
 import { FORM_BUILDER_STEPS, type FormBuilderStepKey } from "@/lib/form-builder/constants";
@@ -133,62 +133,65 @@ export function FormBuilderWizard() {
   };
 
   return (
-    <>
-      <WorkspacePageHeader
-        title={draft.title || "New request form"}
-        description="Build fields and print layout, then submit to Records for review."
-        meta={
-          <p className="font-mono text-xs text-muted-foreground">
-            {draft.refNumber} · {draft.version}
-          </p>
-        }
-      />
-
-      <div className="mt-7 space-y-2.5">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Step {stepIdx + 1} of {FORM_BUILDER_STEPS.length}
-          </span>
-          <span>{FORM_BUILDER_STEPS[stepIdx].label}</span>
-        </div>
-        <Progress
-          value={((stepIdx + 1) / FORM_BUILDER_STEPS.length) * 100}
-          className="h-2 rounded-full"
+    <div className="form-builder-shell pb-8">
+      <div className="form-builder-toolbar space-y-5">
+        <WorkspacePageHeader
+          bordered={false}
+          title={draft.title || "New request form"}
+          description="Build fields and print layout, then submit to Records for review."
+          meta={
+            <p className="font-mono text-xs text-muted-foreground">
+              {draft.refNumber} · {draft.version}
+            </p>
+          }
         />
+
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Step {stepIdx + 1} of {FORM_BUILDER_STEPS.length}
+            </span>
+            <span>{FORM_BUILDER_STEPS[stepIdx].label}</span>
+          </div>
+          <Progress
+            value={((stepIdx + 1) / FORM_BUILDER_STEPS.length) * 100}
+            className="h-2 rounded-full"
+          />
+        </div>
+
+        <ol className="wizard-step-track grid grid-cols-2 gap-x-3 gap-y-2.5 border-0 pb-0 sm:grid-cols-4">
+          {FORM_BUILDER_STEPS.map((s, i) => {
+            const done = i < stepIdx;
+            const active = i === stepIdx;
+            return (
+              <li key={s.key}>
+                <button
+                  type="button"
+                  onClick={() => goToStep(s.key)}
+                  className={`group flex w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition-all ${
+                    active
+                      ? "border-primary/30 bg-primary/8 opacity-100 shadow-sm"
+                      : "border-transparent opacity-80 hover:border-border/80 hover:bg-muted/35 hover:opacity-100"
+                  }`}
+                >
+                  <span
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-medium ${active ? "bg-primary text-primary-foreground shadow-sm" : done ? "bg-maroon/15 text-maroon" : "bg-muted text-muted-foreground"}`}
+                  >
+                    {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
-      <ol className="wizard-step-track mt-8 grid grid-cols-2 gap-x-3 gap-y-2.5 sm:grid-cols-4">
-        {FORM_BUILDER_STEPS.map((s, i) => {
-          const done = i < stepIdx;
-          const active = i === stepIdx;
-          return (
-            <li key={s.key}>
-              <button
-                type="button"
-                onClick={() => goToStep(s.key)}
-                className={`group flex w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition-all ${
-                  active
-                    ? "border-primary/30 bg-primary/8 opacity-100 shadow-sm"
-                    : "border-transparent opacity-80 hover:border-border/80 hover:bg-muted/35 hover:opacity-100"
-                }`}
-              >
-                <span
-                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-medium ${active ? "bg-primary text-primary-foreground shadow-sm" : done ? "bg-maroon/15 text-maroon" : "bg-muted text-muted-foreground"}`}
-                >
-                  {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
-                </span>
-                <span
-                  className={`text-sm font-medium ${active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}
-                >
-                  {s.label}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className="mt-8">
+      <div>
         {step === "general" && <GeneralStep draft={draft} update={update} />}
         {step === "fields" && <FieldsStep draft={draft} update={update} />}
         {step === "print" && <PrintTemplateStep draft={draft} update={update} />}
@@ -207,7 +210,7 @@ export function FormBuilderWizard() {
               className="mt-2 text-xs font-medium underline"
               onClick={() => {
                 logout();
-                void navigate({ to: LOGIN, replace: true });
+                void navigate({ to: ADMIN_LOGIN, replace: true });
               }}
             >
               Sign out and switch account
@@ -216,7 +219,7 @@ export function FormBuilderWizard() {
         </div>
       ) : null}
 
-      <div className="mt-10 flex flex-col gap-4 border-t border-border/80 pt-7 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-8 flex flex-col gap-4 border-t border-border/60 pt-7 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={prev}
@@ -260,6 +263,6 @@ export function FormBuilderWizard() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

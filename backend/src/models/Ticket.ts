@@ -33,5 +33,4 @@ const ticketSchema = new Schema(
 ticketSchema.index({ status: 1, updatedAt: -1 });
 ticketSchema.index({ creatorId: 1, createdAt: -1 });
 
-export type TicketDoc = mongoose.HydratedDocument<InferSchemaType<typeof ticketSchema>>;
 export const Ticket = mongoose.model("Ticket", ticketSchema);

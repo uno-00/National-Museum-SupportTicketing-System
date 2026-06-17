@@ -1,7 +1,7 @@
 import { Ticket } from "../models/Ticket.js";
 import { User } from "../models/User.js";
 import type { AuthUser } from "../middleware/auth.js";
-import type { TicketPriority, TicketStatus } from "../constants.js";
+import type { TicketStatus } from "../constants.js";
 import { AppError } from "../utils/errors.js";
 import { generateTicketNumber } from "../utils/ticketNumber.js";
 import * as formService from "./formService.js";

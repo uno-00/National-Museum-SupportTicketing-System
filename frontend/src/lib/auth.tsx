@@ -28,7 +28,6 @@ type AuthContextValue = {
   activeSlot: PortalSlot | null;
   /** Saved logins per portal — admin, records, and client can all stay signed in */
   sessions: Partial<Record<PortalSlot, ApiUser>>;
-  isAuthenticated: boolean;
   sessionReady: boolean;
   isAuthLoading: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<ApiUser | null>;
@@ -57,10 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [sessionReady, setSessionReady] = useState(() => !activeSlot);
   const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(activeSlot));
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => listSessions().length > 0,
-  );
-
   useEffect(() => {
     let cancelled = false;
     let syncGen = 0;
@@ -68,10 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sync = (slot: PortalSlot | null) => {
       const gen = ++syncGen;
       const all = readSessionsMap();
-      if (!cancelled) {
-        setSessions(all);
-        setIsAuthenticated(Object.keys(all).length > 0);
-      }
+      if (!cancelled) setSessions(all);
 
       if (!slot) {
         if (!cancelled) {
@@ -151,9 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const slot = roleToSlot(u.role);
       setSession(slot, { token, user: u });
 
-      const all = readSessionsMap();
-      setSessions(all);
-      setIsAuthenticated(true);
+      setSessions(readSessionsMap());
 
       const currentSlot = pathToSlot(window.location.pathname);
       if (currentSlot === slot) {
@@ -178,7 +168,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!target) return;
       setSession(target, null);
       setSessions(readSessionsMap());
-      setIsAuthenticated(listSessions().length > 0);
       if (target === activeSlot) {
         setUser(null);
         setSessionReady(true);
@@ -191,7 +180,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      isAuthenticated,
       sessionReady,
       isAuthLoading,
       user,
@@ -200,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [isAuthenticated, sessionReady, isAuthLoading, user, activeSlot, sessions, login, logout],
+    [sessionReady, isAuthLoading, user, activeSlot, sessions, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

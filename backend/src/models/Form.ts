@@ -68,6 +68,4 @@ const formSchema = new Schema(
 formSchema.index({ status: 1, updatedAt: -1 });
 formSchema.index({ title: "text", refNumber: "text" });
 
-export type FormDoc = mongoose.HydratedDocument<InferSchemaType<typeof formSchema>>;
-
 export const Form = mongoose.model("Form", formSchema);

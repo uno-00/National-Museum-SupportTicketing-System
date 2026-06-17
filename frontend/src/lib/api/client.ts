@@ -6,28 +6,9 @@ import type {
   TicketRecord,
   TicketStatus,
 } from "./types";
-import {
-  AUTH_CHANGED_EVENT,
-  getTokenForPath,
-  getTokenForSlot,
-  pathToSlot,
-  type PortalSlot,
-} from "@/lib/sessions";
+import { getTokenForSlot, pathToSlot, type PortalSlot } from "@/lib/sessions";
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-
-/** @deprecated Use per-portal sessions — kept for storage event compatibility */
-export const AUTH_TOKEN_KEY = "nmp_api_token";
-/** @deprecated Use per-portal sessions */
-export const AUTH_USER_KEY = "nmp_api_user";
-
-export { AUTH_CHANGED_EVENT };
-
-export function getAuthToken(slot?: PortalSlot): string | null {
-  if (slot) return getTokenForSlot(slot);
-  if (typeof window === "undefined") return null;
-  return getTokenForPath(window.location.pathname);
-}
 
 export class ApiError extends Error {
   constructor(
@@ -75,10 +56,7 @@ export const api = {
   // Forms (Admin)
   createForm: (body: object) =>
     apiFetch<{ form: FormRecord }>("/api/forms", { method: "POST", body: JSON.stringify(body) }),
-  updateForm: (id: string, body: object) =>
-    apiFetch<{ form: FormRecord }>(`/api/forms/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   myForms: () => apiFetch<{ items: FormRecord[] }>("/api/forms/mine"),
-  getForm: (id: string) => apiFetch<{ form: FormRecord }>(`/api/forms/${id}`),
   submitFormForReview: (id: string) =>
     apiFetch<{ form: FormRecord }>(`/api/forms/${id}/submit-for-review`, { method: "POST" }),
   createAndSubmitForm: (body: object) =>
@@ -119,30 +97,33 @@ export const api = {
   createTicket: (body: object) =>
     apiFetch<{ ticket: TicketRecord }>("/api/tickets", { method: "POST", body: JSON.stringify(body) }),
   myTickets: () => apiFetch<{ items: TicketRecord[] }>("/api/tickets/mine"),
-  listTickets: (params?: Record<string, string>) => {
+  listTickets: (params?: Record<string, string>, slot?: PortalSlot) => {
     const q = new URLSearchParams(params).toString();
     return apiFetch<{ items: TicketRecord[]; total: number; pendingCount: number }>(
       `/api/tickets${q ? `?${q}` : ""}`,
+      undefined,
+      slot,
     );
   },
-  getTicket: (id: string) => apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}`),
-  approveTicket: (id: string) =>
-    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/approve`, { method: "POST" }),
-  rejectTicket: (id: string, reason: string) =>
+  getTicket: (id: string, slot?: PortalSlot) =>
+    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}`, undefined, slot),
+  approveTicket: (id: string, slot?: PortalSlot) =>
+    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/approve`, { method: "POST" }, slot),
+  rejectTicket: (id: string, reason: string, slot?: PortalSlot) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/reject`, {
       method: "POST",
       body: JSON.stringify({ reason }),
-    }),
-  assignTicket: (id: string, assigneeIds: string[]) =>
+    }, slot),
+  assignTicket: (id: string, assigneeIds: string[], slot?: PortalSlot) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/assign`, {
       method: "POST",
       body: JSON.stringify({ assigneeIds }),
-    }),
-  updateTicketStatus: (id: string, status: TicketStatus) =>
+    }, slot),
+  updateTicketStatus: (id: string, status: TicketStatus, slot?: PortalSlot) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
-    }),
+    }, slot),
   confirmTicket: (id: string, satisfied: boolean) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/confirm`, {
       method: "POST",
@@ -156,6 +137,8 @@ export const api = {
   listAssignees: () =>
     apiFetch<{ users: Array<{ _id: string; name: string; email: string; division: string }> }>(
       "/api/tickets/assignees",
+      undefined,
+      "admin",
     ),
 
   uploadFile: (file: File) => {

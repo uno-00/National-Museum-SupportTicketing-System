@@ -17,14 +17,17 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsPublishedRouteImport } from './routes/records/published'
 import { Route as RecordsPendingRouteImport } from './routes/records/pending'
+import { Route as RecordsLoginRouteImport } from './routes/records/login'
 import { Route as RecordsDashboardRouteImport } from './routes/records/dashboard'
 import { Route as RecordsActivityRouteImport } from './routes/records/activity'
 import { Route as ClientSubmitRouteImport } from './routes/client/submit'
+import { Route as ClientLoginRouteImport } from './routes/client/login'
 import { Route as ClientFormsRouteImport } from './routes/client/forms'
 import { Route as ClientFeedbackRouteImport } from './routes/client/feedback'
 import { Route as ClientDashboardRouteImport } from './routes/client/dashboard'
 import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminMyFormsRouteImport } from './routes/admin/my-forms'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminFormsRouteImport } from './routes/admin/forms'
 import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminApprovalsRouteImport } from './routes/admin/approvals'
@@ -74,6 +77,11 @@ const RecordsPendingRoute = RecordsPendingRouteImport.update({
   path: '/pending',
   getParentRoute: () => RecordsRoute,
 } as any)
+const RecordsLoginRoute = RecordsLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => RecordsRoute,
+} as any)
 const RecordsDashboardRoute = RecordsDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -87,6 +95,11 @@ const RecordsActivityRoute = RecordsActivityRouteImport.update({
 const ClientSubmitRoute = ClientSubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientLoginRoute = ClientLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => ClientRoute,
 } as any)
 const ClientFormsRoute = ClientFormsRouteImport.update({
@@ -112,6 +125,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
 const AdminMyFormsRoute = AdminMyFormsRouteImport.update({
   id: '/my-forms',
   path: '/my-forms',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFormsRoute = AdminFormsRouteImport.update({
@@ -165,14 +183,17 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
+  '/client/login': typeof ClientLoginRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
+  '/records/login': typeof RecordsLoginRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -191,14 +212,17 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
+  '/client/login': typeof ClientLoginRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
+  '/records/login': typeof RecordsLoginRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -218,14 +242,17 @@ export interface FileRoutesById {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
+  '/client/login': typeof ClientLoginRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
+  '/records/login': typeof RecordsLoginRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -246,14 +273,17 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/dashboard'
     | '/admin/forms'
+    | '/admin/login'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
+    | '/client/login'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
+    | '/records/login'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -272,14 +302,17 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/dashboard'
     | '/admin/forms'
+    | '/admin/login'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
+    | '/client/login'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
+    | '/records/login'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -298,14 +331,17 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/dashboard'
     | '/admin/forms'
+    | '/admin/login'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
+    | '/client/login'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
+    | '/records/login'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -382,6 +418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsPendingRouteImport
       parentRoute: typeof RecordsRoute
     }
+    '/records/login': {
+      id: '/records/login'
+      path: '/login'
+      fullPath: '/records/login'
+      preLoaderRoute: typeof RecordsLoginRouteImport
+      parentRoute: typeof RecordsRoute
+    }
     '/records/dashboard': {
       id: '/records/dashboard'
       path: '/dashboard'
@@ -401,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/client/submit'
       preLoaderRoute: typeof ClientSubmitRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/login': {
+      id: '/client/login'
+      path: '/login'
+      fullPath: '/client/login'
+      preLoaderRoute: typeof ClientLoginRouteImport
       parentRoute: typeof ClientRoute
     }
     '/client/forms': {
@@ -436,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/my-forms'
       fullPath: '/admin/my-forms'
       preLoaderRoute: typeof AdminMyFormsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/forms': {
@@ -501,6 +558,7 @@ interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminFormsRoute: typeof AdminFormsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminMyFormsRoute: typeof AdminMyFormsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRequestsTicketIdRoute: typeof AdminRequestsTicketIdRoute
@@ -511,6 +569,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminFormsRoute: AdminFormsRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminMyFormsRoute: AdminMyFormsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRequestsTicketIdRoute: AdminRequestsTicketIdRoute,
@@ -523,6 +582,7 @@ interface ClientRouteChildren {
   ClientDashboardRoute: typeof ClientDashboardRoute
   ClientFeedbackRoute: typeof ClientFeedbackRoute
   ClientFormsRoute: typeof ClientFormsRoute
+  ClientLoginRoute: typeof ClientLoginRoute
   ClientSubmitRoute: typeof ClientSubmitRoute
   ClientRequestsTicketIdRoute: typeof ClientRequestsTicketIdRoute
   ClientRequestsIndexRoute: typeof ClientRequestsIndexRoute
@@ -532,6 +592,7 @@ const ClientRouteChildren: ClientRouteChildren = {
   ClientDashboardRoute: ClientDashboardRoute,
   ClientFeedbackRoute: ClientFeedbackRoute,
   ClientFormsRoute: ClientFormsRoute,
+  ClientLoginRoute: ClientLoginRoute,
   ClientSubmitRoute: ClientSubmitRoute,
   ClientRequestsTicketIdRoute: ClientRequestsTicketIdRoute,
   ClientRequestsIndexRoute: ClientRequestsIndexRoute,
@@ -543,6 +604,7 @@ const ClientRouteWithChildren =
 interface RecordsRouteChildren {
   RecordsActivityRoute: typeof RecordsActivityRoute
   RecordsDashboardRoute: typeof RecordsDashboardRoute
+  RecordsLoginRoute: typeof RecordsLoginRoute
   RecordsPendingRoute: typeof RecordsPendingRoute
   RecordsPublishedRoute: typeof RecordsPublishedRoute
   RecordsFormsFormIdRoute: typeof RecordsFormsFormIdRoute
@@ -551,6 +613,7 @@ interface RecordsRouteChildren {
 const RecordsRouteChildren: RecordsRouteChildren = {
   RecordsActivityRoute: RecordsActivityRoute,
   RecordsDashboardRoute: RecordsDashboardRoute,
+  RecordsLoginRoute: RecordsLoginRoute,
   RecordsPendingRoute: RecordsPendingRoute,
   RecordsPublishedRoute: RecordsPublishedRoute,
   RecordsFormsFormIdRoute: RecordsFormsFormIdRoute,

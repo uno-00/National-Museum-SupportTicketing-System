@@ -16,5 +16,4 @@ const activityLogSchema = new Schema(
 activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ entityType: 1, entityId: 1 });
 
-export type ActivityLogDoc = mongoose.HydratedDocument<InferSchemaType<typeof activityLogSchema>>;
 export const ActivityLog = mongoose.model("ActivityLog", activityLogSchema);

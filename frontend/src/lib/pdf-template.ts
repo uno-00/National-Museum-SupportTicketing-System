@@ -9,10 +9,6 @@ export function isPdfFile(file: File): boolean {
   return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
 }
 
-export function isTemplateImageFile(file: File): boolean {
-  return /^image\/(png|jpeg|webp)$/i.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
-}
-
 /** Renders the first page of a PDF to a PNG data URL for the print canvas. */
 export async function pdfFirstPageToDataUrl(
   file: File,

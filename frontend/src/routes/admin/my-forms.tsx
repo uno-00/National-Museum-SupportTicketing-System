@@ -1,9 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  ActionLink,
+  DataPanel,
+  EmptyState,
+  FormStatusBadge,
+  LoadingRows,
+  WorkspacePageHeader,
+} from "@/components/layout/workspace-ui";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
-import type { FormRecord, FormStatus } from "@/lib/api/types";
+import type { FormRecord } from "@/lib/api/types";
 import { ensureAdminOnly } from "@/lib/admin-only-guard";
 import { ADMIN_FORMS } from "@/lib/navigation";
 
@@ -11,13 +19,6 @@ export const Route = createFileRoute("/admin/my-forms")({
   beforeLoad: () => ensureAdminOnly(),
   component: MyFormsPage,
 });
-
-const STATUS_LABEL: Record<FormStatus, string> = {
-  draft: "Draft",
-  pending_review: "Pending Review",
-  published: "Published",
-  disapproved: "Disapproved",
-};
 
 function MyFormsPage() {
   const qc = useQueryClient();
@@ -34,41 +35,59 @@ function MyFormsPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const items = data?.items ?? [];
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My Forms</h1>
-        <Link to={ADMIN_FORMS} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">
-          + New form
-        </Link>
-      </div>
-      <p className="text-sm text-muted-foreground">
+    <div className="page-shell">
+      <WorkspacePageHeader
+        title="My Forms"
+        description="Forms you created in the Form Builder. Send drafts to Records for review before they can be published."
+        actions={<ActionLink to={ADMIN_FORMS}>+ New form</ActionLink>}
+      />
+
+      <div className="notice-banner">
         Only forms with status <strong>Pending Review</strong> appear in Records → Pending Forms.
-      </p>
-      <div className="overflow-hidden rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Ref</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Updated</th>
-              <th className="px-4 py-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
-            ) : (data?.items ?? []).length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No forms yet.</td></tr>
-            ) : (
-              data?.items.map((f) => (
-                <FormRow key={f._id} form={f} onSubmit={() => submit.mutate(f._id)} submitting={submit.isPending} />
-              ))
-            )}
-          </tbody>
-        </table>
       </div>
+
+      <DataPanel title={`${items.length} form${items.length === 1 ? "" : "s"}`}>
+        <div className="overflow-x-auto">
+          <table className="data-table w-full text-sm">
+            <thead className="text-left">
+              <tr>
+                <th className="px-4 py-3 sm:px-5">Title</th>
+                <th className="px-4 py-3 sm:px-5">Ref</th>
+                <th className="px-4 py-3 sm:px-5">Status</th>
+                <th className="px-4 py-3 sm:px-5">Updated</th>
+                <th className="px-4 py-3 sm:px-5">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingRows cols={5} />
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="No forms yet"
+                      description="Create a new TA form in the Form Builder to get started."
+                      action={<ActionLink to={ADMIN_FORMS}>Open Form Builder</ActionLink>}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                items.map((f) => (
+                  <FormRow
+                    key={f._id}
+                    form={f}
+                    onSubmit={() => submit.mutate(f._id)}
+                    submitting={submit.isPending}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </DataPanel>
     </div>
   );
 }
@@ -85,26 +104,16 @@ function FormRow({
   const canSubmit = f.status === "draft" || f.status === "disapproved";
 
   return (
-    <tr className="border-t">
-      <td className="px-4 py-3 font-medium">{f.title}</td>
-      <td className="px-4 py-3 font-mono text-xs">{f.refNumber}</td>
-      <td className="px-4 py-3">
-        <span
-          className={
-            f.status === "pending_review"
-              ? "font-medium text-amber-700"
-              : f.status === "published"
-                ? "text-green-700"
-                : f.status === "disapproved"
-                  ? "text-destructive"
-                  : ""
-          }
-        >
-          {STATUS_LABEL[f.status]}
-        </span>
+    <tr className="border-t border-border/70">
+      <td className="px-4 py-3.5 sm:px-5 font-medium">{f.title}</td>
+      <td className="px-4 py-3.5 sm:px-5 font-mono text-xs text-muted-foreground">{f.refNumber}</td>
+      <td className="px-4 py-3.5 sm:px-5">
+        <FormStatusBadge status={f.status} />
       </td>
-      <td className="px-4 py-3 text-muted-foreground">{new Date(f.updatedAt).toLocaleDateString()}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3.5 sm:px-5 text-muted-foreground">
+        {new Date(f.updatedAt).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-3.5 sm:px-5">
         {canSubmit ? (
           <Button size="sm" onClick={onSubmit} disabled={submitting}>
             Send to Records

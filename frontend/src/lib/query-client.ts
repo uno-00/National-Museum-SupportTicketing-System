@@ -13,7 +13,3 @@ export const queryClient = new QueryClient({
     },
   },
 });
-
-export function clearQueryCache() {
-  queryClient.clear();
-}

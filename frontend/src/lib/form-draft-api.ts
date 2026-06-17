@@ -35,6 +35,3 @@ export async function draftToApiBodyWithUploads(draft: FormDraft) {
 
   return body;
 }
-
-/** @deprecated Use draftToApiBodyWithUploads */
-export const draftToSubmitBody = draftToApiBodyWithUploads;
