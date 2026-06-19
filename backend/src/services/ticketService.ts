@@ -83,7 +83,10 @@ export async function listTicketsForAdmin(query: {
 }
 
 export async function listTicketsForClient(userId: string) {
-  return Ticket.find({ creatorId: userId }).sort({ createdAt: -1 }).lean();
+  return Ticket.find({ creatorId: userId })
+    .sort({ createdAt: -1 })
+    .populate("assignedTo", "name email division")
+    .lean();
 }
 
 export async function getTicketById(id: string) {

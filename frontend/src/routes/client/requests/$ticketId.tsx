@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, MessageSquare, ShieldCheck } from "lucide-react";
+import { Loader2, MessageSquare, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { BackLink, DataPanel, StatusBadge, WorkspacePageHeader } from "@/components/layout/workspace-ui";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { CLIENT_REQUESTS } from "@/lib/navigation";
+import { formatAssignedPersonnel } from "@/lib/utils";
 
 export const Route = createFileRoute("/client/requests/$ticketId")({
   component: TicketTrackPage,
@@ -90,6 +91,12 @@ function TicketTrackPage() {
                 })}
               </dd>
             </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-muted-foreground">Assigned personnel</dt>
+              <dd className="mt-1 text-sm font-medium">
+                {formatAssignedPersonnel(ticket.assignedTo)}
+              </dd>
+            </div>
           </dl>
 
           {ticket.description ? (
@@ -107,6 +114,24 @@ function TicketTrackPage() {
         </div>
 
         <div className="space-y-4">
+          <DataPanel title="Assigned personnel">
+            <div className="flex items-start gap-3 px-4 py-4 sm:px-5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <UserRound className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {formatAssignedPersonnel(ticket.assignedTo)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {ticket.assignedTo?.length
+                    ? "ICT personnel handling your request."
+                    : "An admin will assign personnel after your request is approved."}
+                </p>
+              </div>
+            </div>
+          </DataPanel>
+
           {ticket.status === "resolved" ? (
             <DataPanel title="Confirm resolution">
               <div className="space-y-3 px-4 py-4 sm:px-5">

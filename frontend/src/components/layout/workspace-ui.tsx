@@ -73,6 +73,78 @@ export function BackLink({ to, label = "Back" }: { to: string; label?: string })
   );
 }
 
+export function DashboardHero({
+  eyebrow,
+  title,
+  description,
+  meta,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="dashboard-hero">
+      {eyebrow ? (
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-maroon">{eyebrow}</p>
+      ) : null}
+      <h1 className="mt-1 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        {title}
+      </h1>
+      {description ? (
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      ) : null}
+      {meta ? <div className="mt-3">{meta}</div> : null}
+    </div>
+  );
+}
+
+export function DashboardAlert({
+  tone = "info",
+  title,
+  children,
+  action,
+}: {
+  tone?: "info" | "warning" | "danger";
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className={cn("dashboard-alert", tone === "warning" && "dashboard-alert-warning", tone === "danger" && "dashboard-alert-danger")}>
+      <p className="font-medium text-foreground">{title}</p>
+      {children ? <div className="mt-2 text-sm text-muted-foreground">{children}</div> : null}
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  );
+}
+
+export function ListRow({
+  title,
+  subtitle,
+  trailing,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  trailing?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="list-row flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-foreground">{title}</p>
+        {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p> : null}
+      </div>
+      <div className="flex items-center gap-3">
+        {trailing}
+        {action}
+      </div>
+    </div>
+  );
+}
+
 export function StatCard({
   label,
   value,
@@ -80,6 +152,7 @@ export function StatCard({
   to,
   icon: Icon,
   loading,
+  accent = "default",
 }: {
   label: string;
   value: number | string;
@@ -87,33 +160,45 @@ export function StatCard({
   to?: string;
   icon?: LucideIcon;
   loading?: boolean;
+  accent?: "default" | "warning" | "danger" | "success" | "info";
 }) {
+  const accentClass =
+    accent === "warning"
+      ? "stat-card-warning"
+      : accent === "danger"
+        ? "stat-card-danger"
+        : accent === "success"
+          ? "stat-card-success"
+          : accent === "info"
+            ? "stat-card-info"
+            : "";
+
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         {Icon ? (
-          <span className="rounded-lg bg-primary/10 p-2 text-primary">
+          <span className="stat-card-icon">
             <Icon className="h-4 w-4" />
           </span>
         ) : null}
       </div>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground tabular-nums">
         {loading ? "…" : value}
       </p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
     </>
   );
 
   if (to) {
     return (
-      <Link to={to} className="stat-card block transition-transform hover:-translate-y-0.5">
+      <Link to={to} className={cn("stat-card stat-card-link block", accentClass)}>
         {content}
       </Link>
     );
   }
 
-  return <div className="stat-card">{content}</div>;
+  return <div className={cn("stat-card", accentClass)}>{content}</div>;
 }
 
 export function DataPanel({

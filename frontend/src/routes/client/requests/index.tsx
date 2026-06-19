@@ -10,7 +10,7 @@ import {
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
 import { CLIENT_DASHBOARD, CLIENT_SUBMIT } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
+import { cn, formatAssignedPersonnel } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 export const Route = createFileRoute("/client/requests/")({
@@ -41,6 +41,7 @@ function MyRequestsPage() {
                 <th className="px-4 py-3 sm:px-5">Ticket</th>
                 <th className="px-4 py-3 sm:px-5">Form</th>
                 <th className="px-4 py-3 sm:px-5">Status</th>
+                <th className="px-4 py-3 sm:px-5">Assigned to</th>
                 <th className="px-4 py-3 sm:px-5">Submitted</th>
                 <th className="px-4 py-3 sm:px-5">Action</th>
               </tr>
@@ -50,7 +51,7 @@ function MyRequestsPage() {
                 <LoadingRows />
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     <EmptyState
                       title="No requests yet"
                       description="Start by choosing a published form and submitting your technical assistance request."
@@ -72,6 +73,9 @@ function MyRequestsPage() {
                     <td className="px-4 py-3.5 font-medium sm:px-5">{t.formTitle}</td>
                     <td className="px-4 py-3.5 sm:px-5">
                       <StatusBadge status={t.status} />
+                    </td>
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground sm:px-5">
+                      {formatAssignedPersonnel(t.assignedTo)}
                     </td>
                     <td className="px-4 py-3.5 text-muted-foreground sm:px-5">
                       {new Date(t.createdAt).toLocaleDateString(undefined, {

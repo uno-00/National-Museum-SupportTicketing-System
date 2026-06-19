@@ -11,7 +11,7 @@ import {
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
 import { api, ApiError } from "@/lib/api/client";
-import { RECORDS_LOGIN } from "@/lib/navigation";
+import { LOGIN } from "@/lib/navigation";
 import { useRecordsSession } from "@/lib/use-portal-session";
 
 export const Route = createFileRoute("/records/pending")({
@@ -36,8 +36,8 @@ function PendingFormsPage() {
   const errorMessage =
     error instanceof ApiError && error.status === 403
       ? user
-        ? `Records session missing or expired. Log in at ${RECORDS_LOGIN}.`
-        : `Access denied — log in with your Records account at ${RECORDS_LOGIN}.`
+        ? `Records session missing or expired. Sign in at ${LOGIN}.`
+        : `Access denied — sign in with your Records account at ${LOGIN}.`
       : error instanceof Error
         ? error.message
         : "Could not load pending forms.";
@@ -63,7 +63,7 @@ function PendingFormsPage() {
             <button type="button" onClick={() => logout()} className="underline">
               Sign out
             </button>
-            <Link to={RECORDS_LOGIN} className="underline">
+            <Link to={LOGIN} className="underline">
               Go to login
             </Link>
           </div>

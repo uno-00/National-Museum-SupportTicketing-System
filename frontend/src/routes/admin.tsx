@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -21,13 +21,11 @@ import {
   ADMIN_REPORTS,
   ADMIN_REQUESTS,
   isAdminRole,
-  isPortalLoginPath,
 } from "@/lib/navigation";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    if (isPortalLoginPath(location.pathname)) return;
     await ensurePortalRole(isAdminRole, "admin");
     if (location.pathname === "/admin" || location.pathname === "/admin/") {
       throw redirect({ to: ADMIN_DASHBOARD, replace: true });
@@ -37,7 +35,6 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { canQuery } = useAdminSession();
   const { data: tickets, isLoading: notificationsLoading } = useQuery({
     queryKey: ["admin-tickets-pending"],
@@ -51,13 +48,9 @@ function AdminLayout() {
 
   const notifications = adminApprovalNotifications(tickets?.items ?? []);
 
-  if (isPortalLoginPath(pathname)) {
-    return <Outlet />;
-  }
-
   return (
     <DashboardShell
-      portalTitle="Admin (DH/SH)"
+      portalTitle="Admin"
       notifications={notifications}
       notificationsLoading={notificationsLoading}
       notificationsViewAllTo={ADMIN_APPROVALS}

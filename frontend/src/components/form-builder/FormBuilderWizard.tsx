@@ -7,7 +7,7 @@ import { WorkspacePageHeader } from "@/components/layout/workspace-ui";
 import { Progress } from "@/components/ui/progress";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
-import { ADMIN_LOGIN, dashboardForRole, isAdminRole } from "@/lib/navigation";
+import { ADMIN_DASHBOARD, dashboardForRole, isAdminRole, LOGIN } from "@/lib/navigation";
 import { draftToApiBodyWithUploads } from "@/lib/form-draft-api";
 import { newDraft, type FormDraft } from "@/lib/form-builder-store";
 import { FORM_BUILDER_STEPS, type FormBuilderStepKey } from "@/lib/form-builder/constants";
@@ -210,7 +210,7 @@ export function FormBuilderWizard() {
               className="mt-2 text-xs font-medium underline"
               onClick={() => {
                 logout();
-                void navigate({ to: ADMIN_LOGIN, replace: true });
+                void navigate({ to: LOGIN, replace: true });
               }}
             >
               Sign out and switch account

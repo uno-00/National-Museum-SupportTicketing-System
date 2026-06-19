@@ -1,28 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PortalLoginPage } from "@/components/auth/PortalLoginPage";
-import {
-  ADMIN_DASHBOARD,
-  validateAdminUser,
-} from "@/lib/navigation";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { LOGIN } from "@/lib/navigation";
 
 export const Route = createFileRoute("/admin/login")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Admin sign in — TARF System" }] }),
-  component: AdminLoginPage,
+  beforeLoad: () => {
+    throw redirect({ to: LOGIN, replace: true });
+  },
 });
-
-function AdminLoginPage() {
-  return (
-    <PortalLoginPage
-      portalLabel="Admin portal"
-      title="Admin (DH/SH)"
-      subtitle="Form creation, approvals, and request management"
-      footerNote="Use your Admin account only. Records and Client have separate login pages."
-      successTo={ADMIN_DASHBOARD}
-      demoEmail="admin@nmp.gov.ph"
-      demoPassword="admin123"
-      validateRole={validateAdminUser}
-      wrongRoleMessage="This account is not an Admin user. Use the correct portal login page."
-    />
-  );
-}

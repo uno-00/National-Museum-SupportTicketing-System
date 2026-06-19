@@ -7,10 +7,36 @@ import { generateFormRef } from "../utils/ticketNumber.js";
 async function seed() {
   await connectDb();
 
+  const clientUsers = [
+    { email: "user@nmp.gov.ph", password: "user123", name: "J Dela Cruz", division: "FMD" },
+    { email: "maria.santos@nmp.gov.ph", password: "user123", name: "Maria Santos", division: "Collections" },
+    { email: "juan.reyes@nmp.gov.ph", password: "user123", name: "Juan Reyes", division: "Anthropology" },
+    { email: "ana.garcia@nmp.gov.ph", password: "user123", name: "Ana Garcia", division: "Archaeology" },
+    { email: "carlo.mendoza@nmp.gov.ph", password: "user123", name: "Carlo Mendoza", division: "Botany" },
+    { email: "elena.ramos@nmp.gov.ph", password: "user123", name: "Elena Ramos", division: "Geology" },
+    { email: "mark.torres@nmp.gov.ph", password: "user123", name: "Mark Torres", division: "Zoology" },
+    { email: "sophia.lim@nmp.gov.ph", password: "user123", name: "Sophia Lim", division: "Fine Arts" },
+    { email: "diego.navarro@nmp.gov.ph", password: "user123", name: "Diego Navarro", division: "Maritime" },
+    { email: "isabel.cruz@nmp.gov.ph", password: "user123", name: "Isabel Cruz", division: "Library" },
+    { email: "patrick.ong@nmp.gov.ph", password: "user123", name: "Patrick Ong", division: "HR" },
+    { email: "grace.villanueva@nmp.gov.ph", password: "user123", name: "Grace Villanueva", division: "Finance" },
+    { email: "miguel.fernandez@nmp.gov.ph", password: "user123", name: "Miguel Fernandez", division: "Security" },
+    { email: "camille.bautista@nmp.gov.ph", password: "user123", name: "Camille Bautista", division: "Education" },
+    { email: "rafael.dizon@nmp.gov.ph", password: "user123", name: "Rafael Dizon", division: "Exhibitions" },
+  ] as const;
+
+  const adminUsers = [
+    { email: "admin@nmp.gov.ph", password: "admin123", name: "Ysa Victorio", division: "ICT" },
+    { email: "james.alcantara@nmp.gov.ph", password: "admin123", name: "James Alcantara", division: "ICT" },
+    { email: "patricia.mendoza@nmp.gov.ph", password: "admin123", name: "Patricia Mendoza", division: "ICT" },
+    { email: "rico.delarosa@nmp.gov.ph", password: "admin123", name: "Rico Dela Rosa", division: "ICT" },
+    { email: "nina.castillo@nmp.gov.ph", password: "admin123", name: "Nina Castillo", division: "ICT" },
+  ] as const;
+
   const accounts = [
-    { email: "admin@nmp.gov.ph", password: "admin123", name: "Ysa Victorio", role: "admin" as const, division: "ICT" },
-    { email: "user@nmp.gov.ph", password: "user123", name: "J Dela Cruz", role: "user" as const, division: "FMD" },
+    ...adminUsers.map((admin) => ({ ...admin, role: "admin" as const })),
     { email: "records@nmp.gov.ph", password: "records123", name: "Record Management", role: "record_management" as const, division: "Records" },
+    ...clientUsers.map((client) => ({ ...client, role: "user" as const })),
   ];
 
   await User.deleteMany({ role: "staff" });

@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { BackLink, DataPanel, StatusBadge, WorkspacePageHeader } from "@/components/layout/workspace-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api/client";
 import type { TicketStatus } from "@/lib/api/types";
 import { ADMIN_APPROVALS, ADMIN_REQUESTS } from "@/lib/navigation";
 import { useAdminSession } from "@/lib/use-portal-session";
+import { cn } from "@/lib/utils";
 
 const STATUSES: TicketStatus[] = ["open", "in_progress", "pending", "resolved", "closed"];
 
@@ -26,7 +28,7 @@ function TicketDetailPage() {
   const { ticketId } = Route.useParams();
   const qc = useQueryClient();
   const { canQuery } = useAdminSession();
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
   const { data, isLoading } = useQuery({
@@ -66,7 +68,7 @@ function TicketDetailPage() {
   });
 
   const assign = useMutation({
-    mutationFn: () => api.assignTicket(ticketId, selectedAssignees, "admin"),
+    mutationFn: () => api.assignTicket(ticketId, [selectedAssigneeId], "admin"),
     onSuccess: () => {
       toast.success("Personnel assigned");
       void qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
@@ -91,7 +93,7 @@ function TicketDetailPage() {
 
   useEffect(() => {
     if (!ticket?.assignedTo?.length) return;
-    setSelectedAssignees(ticket.assignedTo.map((u) => u._id));
+    setSelectedAssigneeId(ticket.assignedTo[0]._id);
   }, [ticket?._id, ticket?.assignedTo]);
 
   if (!canQuery || isLoading || !ticket) {
@@ -167,29 +169,40 @@ function TicketDetailPage() {
 
       {!isPendingApproval ? (
         <>
-          <div className="form-panel">
+          <div className="form-panel space-y-3">
             <h2 className="font-medium">Assign personnel</h2>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {assigneeData?.users.map((u) => (
-                <label key={u._id} className="flex items-center gap-2 rounded border px-3 py-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedAssignees.includes(u._id)}
-                    onChange={(e) =>
-                      setSelectedAssignees((prev) =>
-                        e.target.checked ? [...prev, u._id] : prev.filter((id) => id !== u._id),
-                      )
-                    }
-                  />
-                  {u.name}
-                </label>
-              ))}
+            <p className="text-sm text-muted-foreground">
+              Select ICT personnel to handle this request.
+            </p>
+            {ticket.assignedTo?.length ? (
+              <p className="text-sm">
+                Currently assigned:{" "}
+                <span className="font-medium">{ticket.assignedTo.map((u) => u.name).join(", ")}</span>
+              </p>
+            ) : null}
+            <div className="max-w-md space-y-2">
+              <Label htmlFor="assignee">Assigned personnel</Label>
+              <select
+                id="assignee"
+                value={selectedAssigneeId}
+                onChange={(e) => setSelectedAssigneeId(e.target.value)}
+                className={cn(
+                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                )}
+              >
+                <option value="">Select personnel…</option>
+                {assigneeData?.users.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.name} — {u.division}
+                  </option>
+                ))}
+              </select>
             </div>
             <Button
-              className="mt-3"
               size="sm"
               onClick={() => assign.mutate()}
-              disabled={selectedAssignees.length === 0 || assign.isPending}
+              disabled={!selectedAssigneeId || assign.isPending}
             >
               Assign
             </Button>

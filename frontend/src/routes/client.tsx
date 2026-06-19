@@ -9,13 +9,11 @@ import {
   CLIENT_DASHBOARD,
   CLIENT_REQUESTS,
   isClientRole,
-  isPortalLoginPath,
 } from "@/lib/navigation";
 
 export const Route = createFileRoute("/client")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    if (isPortalLoginPath(location.pathname)) return;
     await ensurePortalRole(isClientRole, "client");
     if (location.pathname === "/client" || location.pathname === "/client/") {
       throw redirect({ to: CLIENT_DASHBOARD, replace: true });
@@ -25,8 +23,6 @@ export const Route = createFileRoute("/client")({
 });
 
 function ClientLayout() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
   const { data: tickets, isLoading: notificationsLoading } = useQuery({
     queryKey: ["my-tickets"],
     queryFn: () => api.myTickets(),
@@ -38,10 +34,6 @@ function ClientLayout() {
 
   const notifications = clientTicketNotifications(tickets?.items ?? []);
   const actionCount = notifications.length;
-
-  if (isPortalLoginPath(pathname)) {
-    return <Outlet />;
-  }
 
   return (
     <DashboardShell

@@ -90,7 +90,8 @@ if (-not (Test-Frontend)) {
 
 Write-Host ""
 Write-Host "Open in browser:"
-Write-Host "  http://localhost:8080/login"
+Write-Host "  http://localhost:8080/"
+Write-Host "  Sign in: http://localhost:8080/login"
 Write-Host "  Admin:   admin@nmp.gov.ph / admin123"
 Write-Host "  Records: records@nmp.gov.ph / records123"
 Write-Host "  Client:  user@nmp.gov.ph / user123"

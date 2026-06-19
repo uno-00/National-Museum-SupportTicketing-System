@@ -3,22 +3,17 @@ import type { PortalSlot } from "@/lib/sessions";
 
 export const LOGIN = "/login";
 
+/** @deprecated Use LOGIN — kept for redirects from old bookmarks */
 export const ADMIN_LOGIN = "/admin/login";
 export const RECORDS_LOGIN = "/records/login";
 export const CLIENT_LOGIN = "/client/login";
 
-export function loginForSlot(slot: PortalSlot): string {
-  if (slot === "admin") return ADMIN_LOGIN;
-  if (slot === "records") return RECORDS_LOGIN;
-  return CLIENT_LOGIN;
+export function loginForSlot(_slot: PortalSlot): string {
+  return LOGIN;
 }
 
 export function isPortalLoginPath(pathname: string): boolean {
-  return (
-    pathname === ADMIN_LOGIN ||
-    pathname === RECORDS_LOGIN ||
-    pathname === CLIENT_LOGIN
-  );
+  return pathname === LOGIN;
 }
 
 export const ADMIN_DASHBOARD = "/admin/dashboard";

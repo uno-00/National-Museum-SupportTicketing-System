@@ -57,6 +57,8 @@ export type FormRecord = {
   workProcedureName?: string;
   workProcedurePath?: string;
   reviewRemarks?: string;
+  reviewedAt?: string;
+  submittedForReviewAt?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: { _id: string; name: string; email: string; division: string };

@@ -73,10 +73,20 @@ export function DashboardShell({
 
   const sidebar = (
     <div className="flex h-full flex-col bg-card">
-      <div className="workspace-sidebar-brand px-4 py-5">
-        <NmpLogo size="sm" className="brightness-0 invert" />
-        <p className="mt-3 text-sm font-semibold tracking-wide">{portalTitle}</p>
-        <p className="mt-1 text-[11px] text-white/70">TARF System</p>
+      <div className="workspace-sidebar-brand">
+        <div className="workspace-sidebar-brand-inner">
+          <div className="sidebar-brand-logo-ring">
+            <NmpLogo
+              size="sm"
+              className="brightness-0 invert drop-shadow-[0_4px_14px_rgba(255,255,255,0.18)]"
+            />
+          </div>
+          <div className="sidebar-brand-copy">
+            <p className="sidebar-brand-eyebrow">National Museum of the Philippines</p>
+            <h2 className="sidebar-brand-title">{portalTitle}</h2>
+          </div>
+        </div>
+        <div className="sidebar-brand-divider" aria-hidden />
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
