@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
   DataPanel,
@@ -9,6 +10,7 @@ import {
   StatusBadge,
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
+import { TicketPdfViewerDialog } from "@/components/tickets/TicketPdfViewerDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api/client";
@@ -38,6 +40,7 @@ function ApprovalsPage() {
   });
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [viewTicket, setViewTicket] = useState<{ id: string; number: string } | null>(null);
 
   const errorMessage =
     error instanceof ApiError
@@ -72,6 +75,7 @@ function ApprovalsPage() {
   });
 
   const items = data?.items ?? [];
+  const rejectTarget = items.find((t) => t._id === rejectId);
 
   return (
     <div className="page-shell">
@@ -79,7 +83,12 @@ function ApprovalsPage() {
         title="Approvals"
         description="Review client technical assistance requests before assignment and processing."
         actions={
-          <Button variant="outline" size="sm" onClick={() => void refetch()} disabled={!canQuery || isFetching}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            disabled={!canQuery || isFetching}
+          >
             {isFetching ? "Refreshing…" : "Refresh"}
           </Button>
         }
@@ -88,7 +97,11 @@ function ApprovalsPage() {
       {isError ? (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <p>{errorMessage}</p>
-          <button type="button" onClick={() => void refetch()} className="mt-2 text-xs font-medium underline">
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-2 text-xs font-medium underline"
+          >
             Try again
           </button>
         </div>
@@ -140,6 +153,14 @@ function ApprovalsPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
+                          variant="outline"
+                          onClick={() => setViewTicket({ id: t._id, number: t.ticketNumber })}
+                        >
+                          <FileText className="mr-1.5 h-3.5 w-3.5" />
+                          View file
+                        </Button>
+                        <Button
+                          size="sm"
                           onClick={() => approve.mutate(t._id)}
                           disabled={approve.isPending || reject.isPending}
                         >
@@ -165,7 +186,17 @@ function ApprovalsPage() {
 
       {rejectId ? (
         <div className="form-panel">
-          <p className="text-sm font-medium">Rejection reason</p>
+          <p className="text-sm font-medium">
+            Reject request
+            {rejectTarget ? (
+              <span className="ml-2 font-mono text-xs text-muted-foreground">
+                {rejectTarget.ticketNumber}
+              </span>
+            ) : null}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {rejectTarget?.formTitle ?? "Provide a clear reason for the client."}
+          </p>
           <Input
             className="mt-2"
             value={reason}
@@ -190,6 +221,16 @@ function ApprovalsPage() {
       <Link to={ADMIN_REQUESTS} className="text-sm text-maroon hover:underline">
         View all requests →
       </Link>
+
+      <TicketPdfViewerDialog
+        ticketId={viewTicket?.id ?? null}
+        ticketNumber={viewTicket?.number}
+        open={Boolean(viewTicket)}
+        onOpenChange={(open) => {
+          if (!open) setViewTicket(null);
+        }}
+        slot="admin"
+      />
     </div>
   );
 }

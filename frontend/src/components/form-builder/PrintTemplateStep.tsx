@@ -30,6 +30,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { buildPrintReadyText, buildSampleSubmissionValues } from "@/lib/print-merge";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 const MAX_TEMPLATE_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -74,6 +75,9 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
 
   const fieldFontSize = draft.printPlacementFontSize ?? DEFAULT_PRINT_PLACEMENT_FONT_SIZE;
   const fieldTextWidth = Math.round(fieldFontSize * 15);
+  const templateFileName = draft.printTemplateImagePath
+    ? draft.printTemplateImagePath.split("/").pop()?.replace(/^\d+-/, "") || "Template file"
+    : null;
 
   const setPlacements = (next: PrintFieldPlacement[]) => update({ printPlacements: next });
 
@@ -103,8 +107,8 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
     toast.info("All field markers removed from the template.");
   };
 
-  const applyTemplateDataUrl = (dataUrl: string, message: string) => {
-    update({ printTemplateImage: dataUrl });
+  const applyTemplateDataUrl = (dataUrl: string, serverPath: string, message: string) => {
+    update({ printTemplateImage: dataUrl, printTemplateImagePath: serverPath });
     toast.success(message);
   };
 
@@ -133,6 +137,8 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
 
     setIsUploading(true);
     try {
+      const { file: uploaded } = await api.uploadFile(file);
+
       if (pdf) {
         const { isPdfFile: checkPdf, pdfFirstPageToDataUrl } = await import("@/lib/pdf-template");
         if (!checkPdf(file)) {
@@ -142,9 +148,10 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
         const { dataUrl, pageCount } = await pdfFirstPageToDataUrl(file);
         applyTemplateDataUrl(
           dataUrl,
+          uploaded.url,
           pageCount > 1
-            ? `PDF loaded (page 1 of ${pageCount}). Drag fields onto the form.`
-            : "PDF loaded. Drag fields onto the form.",
+            ? `PDF uploaded (page 1 of ${pageCount}). Drag fields onto the form.`
+            : "PDF uploaded. Drag fields onto the form.",
         );
       } else {
         const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -153,10 +160,14 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
           reader.onerror = () => reject(new Error("read failed"));
           reader.readAsDataURL(file);
         });
-        applyTemplateDataUrl(dataUrl, "Template loaded. Drag fields onto the form.");
+        applyTemplateDataUrl(
+          dataUrl,
+          uploaded.url,
+          "Template uploaded. Drag fields onto the form.",
+        );
       }
-    } catch {
-      toast.error(pdf ? "Could not read that PDF." : "Could not read that image.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not upload template.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -164,7 +175,7 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
   };
 
   const saveTemplateLayout = () => {
-    const lines = (draft.printPlacements ?? []).map(
+    const lines = (placementsRef.current ?? []).map(
       (p) => `${p.variable}\t${p.xPct.toFixed(2)}\t${p.yPct.toFixed(2)}\t${p.label}`,
     );
     const block = [
@@ -173,7 +184,11 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
       ...lines,
       "[/NMP placements]",
     ].join("\n");
-    update({ printTemplate: block, printPlacementFontSize: fieldFontSize });
+    update({
+      printPlacements: [...placementsRef.current],
+      printTemplate: block,
+      printPlacementFontSize: fieldFontSize,
+    });
     toast.success("Layout saved.");
   };
 
@@ -341,7 +356,12 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
               {image ? (
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-4">
+                  {templateFileName ? (
+                    <p className="max-w-[min(100%,280px)] truncate text-xs font-medium text-foreground sm:text-sm">
+                      {templateFileName}
+                    </p>
+                  ) : null}
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">Zoom</span>
                     <Button
@@ -401,7 +421,7 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
                 </div>
               ) : (
                 <span className="text-xs text-muted-foreground">
-                  PNG, JPG, WebP, or PDF · up to 15 MB
+                  PNG, JPG, WebP, or PDF · images up to 4 MB · PDF up to 15 MB
                 </span>
               )}
               <div className="flex flex-wrap gap-2">

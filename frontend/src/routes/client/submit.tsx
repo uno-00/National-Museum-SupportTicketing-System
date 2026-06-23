@@ -7,13 +7,15 @@ export const Route = createFileRoute("/client/submit")({
   validateSearch: (s: Record<string, unknown>) => ({
     formId: typeof s.formId === "string" ? s.formId : undefined,
   }),
-  component: () => {
-    const { formId } = Route.useSearch();
-    return (
-      <div className="page-shell">
-        <BackLink to={CLIENT_REQUESTS} label="Back to my requests" />
-        <ClientSubmitForm initialFormId={formId} />
-      </div>
-    );
-  },
+  component: ClientSubmitPage,
 });
+
+function ClientSubmitPage() {
+  const { formId } = Route.useSearch();
+  return (
+    <div className="page-shell">
+      <BackLink to={CLIENT_REQUESTS} label="Back to my requests" />
+      <ClientSubmitForm initialFormId={formId} />
+    </div>
+  );
+}

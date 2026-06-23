@@ -25,6 +25,22 @@ formsRouter.get("/published/:id", async (req, res, next) => {
   }
 });
 
+formsRouter.get("/published/:id/document.pdf", async (req, res, next) => {
+  try {
+    const form = await formService.getPublishedForm(paramId(req));
+    const { generateFormPreviewPdf } = await import("../services/formDocumentService.js");
+    const bytes = await generateFormPreviewPdf(String(form._id));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${form.refNumber.replace(/[^a-zA-Z0-9._-]/g, "_")}.pdf"`,
+    );
+    res.send(Buffer.from(bytes));
+  } catch (e) {
+    next(e);
+  }
+});
+
 formsRouter.get("/mine", requireRoles("admin"), async (req, res, next) => {
   try {
     const items = await formService.listMyForms(req.user!);

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Clock, FileText, FolderOpen } from "lucide-react";
+import { useState } from "react";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 import {
@@ -13,10 +14,11 @@ import {
   ListRow,
   StatCard,
 } from "@/components/layout/workspace-ui";
+import { FormPdfViewerDialog } from "@/components/records/FormPdfViewerDialog";
 import { RECORDS_ACTIVITY, RECORDS_PENDING, RECORDS_PUBLISHED } from "@/lib/navigation";
 import { useRecordsSession } from "@/lib/use-portal-session";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export const Route = createFileRoute("/records/dashboard")({
   component: RecordsDashboardPage,
@@ -34,6 +36,9 @@ function formatToday() {
 function RecordsDashboardPage() {
   const { user } = useAuth();
   const { canQuery } = useRecordsSession();
+  const [viewForm, setViewForm] = useState<{ id: string; title: string; refNumber: string } | null>(
+    null,
+  );
   const { data, isLoading } = useQuery({
     queryKey: ["records-dashboard"],
     queryFn: () => api.recordsDashboard(),
@@ -59,7 +64,10 @@ function RecordsDashboardPage() {
       />
 
       {pendingCount > 0 ? (
-        <DashboardAlert tone="warning" title={`${pendingCount} form${pendingCount === 1 ? "" : "s"} awaiting review`}>
+        <DashboardAlert
+          tone="warning"
+          title={`${pendingCount} form${pendingCount === 1 ? "" : "s"} awaiting review`}
+        >
           Open Pending Forms to approve or return forms to Admin with remarks.
         </DashboardAlert>
       ) : (
@@ -124,13 +132,29 @@ function RecordsDashboardPage() {
                 subtitle={`${row.refNumber} · ${row.createdBy?.name ?? "Admin"} · ${row.department ?? row.createdBy?.division ?? "—"}`}
                 trailing={<FormStatusBadge status={row.status} />}
                 action={
-                  <Link
-                    to="/records/forms/$formId"
-                    params={{ formId: row._id }}
-                    className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shadow-sm")}
-                  >
-                    Review
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shadow-sm"
+                      onClick={() =>
+                        setViewForm({ id: row._id, title: row.title, refNumber: row.refNumber })
+                      }
+                    >
+                      <FileText className="mr-1.5 h-3.5 w-3.5" />
+                      View file
+                    </Button>
+                    <Link
+                      to="/records/forms/$formId"
+                      params={{ formId: row._id }}
+                      className={cn(
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        "shadow-sm",
+                      )}
+                    >
+                      Review
+                    </Link>
+                  </div>
                 }
               />
             ))}
@@ -162,6 +186,16 @@ function RecordsDashboardPage() {
           </ul>
         </DataPanel>
       ) : null}
+
+      <FormPdfViewerDialog
+        formId={viewForm?.id ?? null}
+        formTitle={viewForm?.title}
+        refNumber={viewForm?.refNumber}
+        open={Boolean(viewForm)}
+        onOpenChange={(open) => {
+          if (!open) setViewForm(null);
+        }}
+      />
     </div>
   );
 }

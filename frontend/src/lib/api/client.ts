@@ -19,11 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init?: RequestInit,
-  slot?: PortalSlot,
-): Promise<T> {
+export async function apiFetch<T>(path: string, init?: RequestInit, slot?: PortalSlot): Promise<T> {
   const resolvedSlot =
     slot ?? (typeof window !== "undefined" ? pathToSlot(window.location.pathname) : null);
   const token = resolvedSlot ? getTokenForSlot(resolvedSlot) : null;
@@ -43,6 +39,26 @@ export async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
+export async function apiFetchBlob(
+  path: string,
+  init?: RequestInit,
+  slot?: PortalSlot,
+): Promise<Blob> {
+  const resolvedSlot =
+    slot ?? (typeof window !== "undefined" ? pathToSlot(window.location.pathname) : null);
+  const token = resolvedSlot ? getTokenForSlot(resolvedSlot) : null;
+
+  const headers = new Headers(init?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new ApiError(res.status, body.error ?? res.statusText);
+  }
+  return res.blob();
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ token: string; user: ApiUser }>("/api/auth/login", {
@@ -50,8 +66,7 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
-  me: (slot: PortalSlot) =>
-    apiFetch<{ user: ApiUser }>("/api/auth/me", undefined, slot),
+  me: (slot: PortalSlot) => apiFetch<{ user: ApiUser }>("/api/auth/me", undefined, slot),
 
   // Forms (Admin)
   createForm: (body: object) =>
@@ -68,6 +83,8 @@ export const api = {
   // Published forms (Client)
   publishedForms: () => apiFetch<{ items: FormRecord[] }>("/api/forms/published"),
   getPublishedForm: (id: string) => apiFetch<{ form: FormRecord }>(`/api/forms/published/${id}`),
+  getPublishedFormDocument: (id: string) =>
+    apiFetchBlob(`/api/forms/published/${id}/document.pdf`),
 
   // Records — form review
   recordsDashboard: () =>
@@ -84,8 +101,8 @@ export const api = {
       `/api/records/forms${q ? `?${q}` : ""}`,
     );
   },
-  getRecordsForm: (id: string) =>
-    apiFetch<{ form: FormRecord }>(`/api/records/forms/${id}`),
+  getRecordsForm: (id: string) => apiFetch<{ form: FormRecord }>(`/api/records/forms/${id}`),
+  getRecordsFormDocument: (id: string) => apiFetchBlob(`/api/records/forms/${id}/document.pdf`),
   reviewForm: (id: string, body: { decision: FormReviewDecision; remarks?: string }) =>
     apiFetch<{ form: FormRecord }>(`/api/records/forms/${id}/review`, {
       method: "POST",
@@ -95,7 +112,10 @@ export const api = {
 
   // Tickets
   createTicket: (body: object) =>
-    apiFetch<{ ticket: TicketRecord }>("/api/tickets", { method: "POST", body: JSON.stringify(body) }),
+    apiFetch<{ ticket: TicketRecord }>("/api/tickets", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   myTickets: () => apiFetch<{ items: TicketRecord[] }>("/api/tickets/mine"),
   listTickets: (params?: Record<string, string>, slot?: PortalSlot) => {
     const q = new URLSearchParams(params).toString();
@@ -107,23 +127,41 @@ export const api = {
   },
   getTicket: (id: string, slot?: PortalSlot) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}`, undefined, slot),
+  getTicketDocument: (id: string, slot?: PortalSlot) =>
+    apiFetchBlob(`/api/tickets/${id}/document.pdf`, undefined, slot),
   approveTicket: (id: string, slot?: PortalSlot) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/approve`, { method: "POST" }, slot),
   rejectTicket: (id: string, reason: string, slot?: PortalSlot) =>
-    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    }, slot),
+    apiFetch<{ ticket: TicketRecord }>(
+      `/api/tickets/${id}/reject`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      },
+      slot,
+    ),
   assignTicket: (id: string, assigneeIds: string[], slot?: PortalSlot) =>
-    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/assign`, {
-      method: "POST",
-      body: JSON.stringify({ assigneeIds }),
-    }, slot),
+    apiFetch<{ ticket: TicketRecord }>(
+      `/api/tickets/${id}/assign`,
+      {
+        method: "POST",
+        body: JSON.stringify({ assigneeIds }),
+      },
+      slot,
+    ),
+  listAssignedTickets: (slot?: PortalSlot) =>
+    apiFetch<{ items: TicketRecord[] }>(`/api/tickets/assigned/mine`, undefined, slot),
+  completeTicketService: (id: string, slot?: PortalSlot) =>
+    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/complete`, { method: "POST" }, slot),
   updateTicketStatus: (id: string, status: TicketStatus, slot?: PortalSlot) =>
-    apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    }, slot),
+    apiFetch<{ ticket: TicketRecord }>(
+      `/api/tickets/${id}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      },
+      slot,
+    ),
   confirmTicket: (id: string, satisfied: boolean) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/confirm`, {
       method: "POST",

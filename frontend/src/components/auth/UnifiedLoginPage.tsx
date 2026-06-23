@@ -54,12 +54,15 @@ export function UnifiedLoginPage() {
           <NmpLogo size="lg" className="mx-auto mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
 
           <div className="mb-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/80">TARF System</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
+              TARF System
+            </p>
             <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Sign in
             </h1>
             <p className="mt-2 text-sm text-white/75">
-              Use your NMP account. You will be routed to Admin, Records, or Client based on your role.
+              Use your NMP account. You will be routed to Admin, Records, or Client based on your
+              role.
             </p>
           </div>
 
@@ -71,7 +74,8 @@ export function UnifiedLoginPage() {
               <p className="font-medium">API server is not running</p>
               <p className="mt-1 text-xs leading-relaxed text-red-100/90">
                 From project root run{" "}
-                <code className="rounded bg-black/20 px-1">npm run start</code> and ensure MongoDB is running.
+                <code className="rounded bg-black/20 px-1">npm run start</code> and ensure MongoDB
+                is running.
               </p>
             </div>
           ) : null}
@@ -162,7 +166,8 @@ export function UnifiedLoginPage() {
             {DEMO_ACCOUNTS.map(({ role, email, password: demoPassword }) => (
               <p key={role} className="text-center">
                 <span className="font-medium text-white/90">{role}:</span>{" "}
-                <span className="font-mono">{email}</span> / <span className="font-mono">{demoPassword}</span>
+                <span className="font-mono">{email}</span> /{" "}
+                <span className="font-mono">{demoPassword}</span>
               </p>
             ))}
             <p className="pt-1 text-center text-white/65">

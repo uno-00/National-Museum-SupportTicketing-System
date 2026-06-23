@@ -3,10 +3,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { dashboardForRole, loginForSlot } from "@/lib/navigation";
 import { getSession, setSession, type PortalSlot } from "@/lib/sessions";
 
-export async function ensurePortalRole(
-  allowed: (role: string) => boolean,
-  slot: PortalSlot,
-) {
+export async function ensurePortalRole(allowed: (role: string) => boolean, slot: PortalSlot) {
   const saved = getSession(slot);
   if (!saved?.token) {
     throw redirect({ to: loginForSlot(slot), replace: true });

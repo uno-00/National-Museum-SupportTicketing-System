@@ -130,7 +130,9 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-64 shrink-0 border-r border-border shadow-sm lg:block">{sidebar}</aside>
+      <aside className="hidden w-64 shrink-0 border-r border-border shadow-sm lg:block">
+        {sidebar}
+      </aside>
 
       {sidebarOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">

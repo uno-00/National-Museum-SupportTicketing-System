@@ -43,7 +43,11 @@ function ClientDashboardPage() {
   const completed = items.filter((t) => ["closed", "resolved"].includes(t.status)).length;
   const needsAction = items.filter((t) => ["resolved", "rejected"].includes(t.status)).length;
   const recent = [...items]
-    .sort((a, b) => new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt ?? b.createdAt).getTime() -
+        new Date(a.updatedAt ?? a.createdAt).getTime(),
+    )
     .slice(0, 6);
   const firstName = user?.name?.split(" ")[0];
 
@@ -63,7 +67,8 @@ function ClientDashboardPage() {
 
       {needsAction > 0 ? (
         <DashboardAlert tone="warning" title="Action needed on your requests">
-          Some requests need confirmation or follow-up. Open My Requests to review the latest status.
+          Some requests need confirmation or follow-up. Open My Requests to review the latest
+          status.
           <div className="mt-3">
             <ActionLink to={CLIENT_REQUESTS} variant="outline">
               Go to My Requests
@@ -79,7 +84,8 @@ function ClientDashboardPage() {
         </DashboardAlert>
       ) : (
         <DashboardAlert tone="info" title="Your workspace">
-          Active requests update automatically. Check back here or open My Requests for full details.
+          Active requests update automatically. Check back here or open My Requests for full
+          details.
         </DashboardAlert>
       )}
 
@@ -139,7 +145,9 @@ function ClientDashboardPage() {
         }
       >
         {isLoading ? (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">Loading your requests…</p>
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Loading your requests…
+          </p>
         ) : recent.length === 0 ? (
           <EmptyState
             title="No requests yet"
@@ -159,7 +167,9 @@ function ClientDashboardPage() {
               <ListRow
                 key={t._id}
                 title={t.formTitle}
-                subtitle={`${t.ticketNumber} · ${formatAssignedPersonnel(t.assignedTo, "Unassigned")} · ${new Date(t.createdAt).toLocaleDateString(undefined, {
+                subtitle={`${t.ticketNumber} · ${formatAssignedPersonnel(t.assignedTo, "Unassigned")} · ${new Date(
+                  t.createdAt,
+                ).toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

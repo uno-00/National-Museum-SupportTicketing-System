@@ -7,6 +7,7 @@ import {
   FileStack,
   LayoutDashboard,
   Ticket,
+  UserCheck,
 } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { api } from "@/lib/api/client";
@@ -15,6 +16,7 @@ import { ensurePortalRole } from "@/lib/portal-guard";
 import { useAdminSession } from "@/lib/use-portal-session";
 import {
   ADMIN_APPROVALS,
+  ADMIN_ASSIGNED,
   ADMIN_DASHBOARD,
   ADMIN_FORMS,
   ADMIN_MY_FORMS,
@@ -59,8 +61,14 @@ function AdminLayout() {
         { to: ADMIN_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
         { to: ADMIN_FORMS, label: "Form Builder", icon: FilePenLine },
         { to: ADMIN_MY_FORMS, label: "My Forms", icon: FileStack },
-        { to: ADMIN_APPROVALS, label: "Approvals", icon: ClipboardCheck, badge: tickets?.pendingCount ?? notifications.length },
+        {
+          to: ADMIN_APPROVALS,
+          label: "Approvals",
+          icon: ClipboardCheck,
+          badge: tickets?.pendingCount ?? notifications.length,
+        },
         { to: ADMIN_REQUESTS, label: "Request Management", icon: Ticket },
+        { to: ADMIN_ASSIGNED, label: "My Assignments", icon: UserCheck },
         { to: ADMIN_REPORTS, label: "Reports", icon: BarChart3 },
       ]}
     >

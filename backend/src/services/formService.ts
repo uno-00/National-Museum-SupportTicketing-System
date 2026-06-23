@@ -50,6 +50,11 @@ export async function getFormById(id: string) {
 
 /** Create form and submit to Records in one step (avoids orphan drafts). */
 export async function createAndSubmitForReview(user: AuthUser, body: Record<string, unknown>) {
+  const templatePath = String(body.printTemplateImagePath ?? "").trim();
+  const procedurePath = String(body.workProcedurePath ?? "").trim();
+  if (!templatePath && !procedurePath) {
+    throw new AppError(400, "Upload a form template before submitting to Records.");
+  }
   const form = await createForm(user, body);
   return submitFormForReview(user, form._id.toString());
 }

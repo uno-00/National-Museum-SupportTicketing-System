@@ -23,15 +23,6 @@ export function stripDesignerPlacementBlock(template: string): string {
   return template.replace(PLACEMENT_BLOCK, "").trim();
 }
 
-/** Sample answers for preview / demos (not shown to employees as placeholders). */
-export function buildSampleSubmissionValues(fields: FormField[]): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const f of fields) {
-    map[f.variable] = sampleValueForField(f);
-  }
-  return map;
-}
-
 function sampleValueForField(f: FormField): string {
   switch (f.type) {
     case "dropdown":
@@ -51,9 +42,21 @@ function sampleValueForField(f: FormField): string {
     case "signature":
       return "(signature)";
     default:
-      return f.label ? `${f.label} (sample)` : "—";
+      return f.label || "—";
   }
 }
+
+/** Short preview labels for the form builder canvas only — not used on submitted files. */
+export function buildSampleSubmissionValues(fields: FormField[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const f of fields) {
+    map[f.variable] = sampleValueForField(f);
+  }
+  return map;
+}
+
+/** Actual submitted answers mapped for print layout overlays. */
+export { buildSubmissionDisplayValues } from "@/lib/placement-values";
 
 /** Final body text for printing: no designer blocks, no `{{}}` tokens. */
 export function buildPrintReadyText(template: string, values: Record<string, string>): string {

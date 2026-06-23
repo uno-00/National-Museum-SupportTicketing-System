@@ -11,6 +11,13 @@ export function validateFormBuilderStep(step: FormBuilderStepKey, draft: FormDra
       if (draft.fields.length === 0) return "Add at least one form field before continuing.";
       return null;
     case "print":
+      if (!draft.printTemplateImagePath?.trim() && !draft.printTemplateImage) {
+        return "Upload a form template before continuing.";
+      }
+      if ((draft.printPlacements?.length ?? 0) === 0) {
+        return "Place at least one field on the template before continuing.";
+      }
+      return null;
     case "procedure":
       return null;
     default:

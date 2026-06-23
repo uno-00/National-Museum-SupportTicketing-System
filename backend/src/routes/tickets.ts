@@ -37,6 +37,15 @@ ticketsRouter.get("/mine", requireRoles("user"), async (req, res, next) => {
   }
 });
 
+ticketsRouter.get("/assigned/mine", requireRoles("admin"), async (req, res, next) => {
+  try {
+    const items = await ticketService.listTicketsAssignedToAdmin(req.user!.id);
+    res.json({ items });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Admin: list all tickets
 ticketsRouter.get("/", requireRoles("admin"), async (req, res, next) => {
   try {
@@ -56,6 +65,23 @@ ticketsRouter.get("/assignees", requireRoles("admin"), async (_req, res, next) =
   try {
     const users = await ticketService.listAssignees();
     res.json({ users });
+  } catch (e) {
+    next(e);
+  }
+});
+
+ticketsRouter.get("/:id/document.pdf", async (req, res, next) => {
+  try {
+    const ticket = await ticketService.getTicketById(paramId(req));
+    ticketService.assertTicketAccess(req.user!, ticket);
+    const { generateTicketDocumentPdf } = await import("../services/ticketDocumentService.js");
+    const bytes = await generateTicketDocumentPdf(paramId(req));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${ticket.ticketNumber.replace(/[^a-zA-Z0-9._-]/g, "_")}.pdf"`,
+    );
+    res.send(Buffer.from(bytes));
   } catch (e) {
     next(e);
   }
@@ -100,9 +126,20 @@ ticketsRouter.post("/:id/assign", requireRoles("admin"), async (req, res, next) 
   }
 });
 
+ticketsRouter.post("/:id/complete", requireRoles("admin"), async (req, res, next) => {
+  try {
+    const ticket = await ticketService.completeTicketService(req.user!, paramId(req));
+    res.json({ ticket });
+  } catch (e) {
+    next(e);
+  }
+});
+
 ticketsRouter.patch("/:id/status", requireRoles("admin"), async (req, res, next) => {
   try {
-    const { status } = z.object({ status: z.enum(TICKET_STATUSES) }).parse(req.body);
+    const { status } = z
+      .object({ status: z.enum(TICKET_STATUSES) })
+      .parse(req.body);
     const ticket = await ticketService.updateTicketStatus(req.user!, paramId(req), status);
     res.json({ ticket });
   } catch (e) {

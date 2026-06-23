@@ -45,6 +45,21 @@ export function FormBuilderWizard() {
     }
   }, [user, isAuthLoading, navigate]);
 
+  const update = useCallback((patch: Partial<FormDraft>) => {
+    setSaveError(null);
+    setDraft((d) => ({ ...d, ...patch }));
+  }, []);
+
+  const goToStep = useCallback(
+    (key: FormBuilderStepKey) => {
+      const targetIdx = FORM_BUILDER_STEPS.findIndex((s) => s.key === key);
+      if (targetIdx > stepIdx && validateFormBuilderStepsUntil(draft, stepIdx, targetIdx)) return;
+      setSaveError(null);
+      setStep(key);
+    },
+    [draft, stepIdx],
+  );
+
   if (isAuthLoading && !user) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Loading…</p>;
   }
@@ -62,21 +77,6 @@ export function FormBuilderWizard() {
     setSaveError(null);
     setStep(FORM_BUILDER_STEPS[Math.max(stepIdx - 1, 0)].key);
   };
-
-  const update = useCallback((patch: Partial<FormDraft>) => {
-    setSaveError(null);
-    setDraft((d) => ({ ...d, ...patch }));
-  }, []);
-
-  const goToStep = useCallback(
-    (key: FormBuilderStepKey) => {
-      const targetIdx = FORM_BUILDER_STEPS.findIndex((s) => s.key === key);
-      if (targetIdx > stepIdx && validateFormBuilderStepsUntil(draft, stepIdx, targetIdx)) return;
-      setSaveError(null);
-      setStep(key);
-    },
-    [draft, stepIdx],
-  );
 
   const validateBeforeSave = () => {
     for (let i = 0; i < FORM_BUILDER_STEPS.length; i++) {
@@ -119,8 +119,7 @@ export function FormBuilderWizard() {
       await qc.invalidateQueries({ queryKey: ["records-dashboard"] });
       await qc.invalidateQueries({ queryKey: ["records-pending"] });
       toast.success(`"${submitted.title}" submitted to Records`, {
-        description:
-          "Open Records portal (separate tab) as records@nmp.gov.ph → Pending Forms.",
+        description: "Open Records portal (separate tab) as records@nmp.gov.ph → Pending Forms.",
         duration: 8000,
       });
       setDraft(newDraft());
@@ -250,12 +249,21 @@ export function FormBuilderWizard() {
               disabled={isSaving}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-105 disabled:opacity-50"
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
               Submit to Records
             </button>
             <p className="max-w-xs text-right text-xs text-muted-foreground">
               Sends this form to Record Admin for review.{" "}
-              <button type="button" onClick={saveDraft} disabled={isSaving} className="underline hover:text-foreground">
+              <button
+                type="button"
+                onClick={saveDraft}
+                disabled={isSaving}
+                className="underline hover:text-foreground"
+              >
                 Save as draft instead
               </button>{" "}
               (drafts do not appear in Records).

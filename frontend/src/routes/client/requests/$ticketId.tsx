@@ -3,7 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2, MessageSquare, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { BackLink, DataPanel, StatusBadge, WorkspacePageHeader } from "@/components/layout/workspace-ui";
+import {
+  BackLink,
+  DataPanel,
+  StatusBadge,
+  WorkspacePageHeader,
+} from "@/components/layout/workspace-ui";
+import { TicketRequestDetails } from "@/components/tickets/TicketRequestDetails";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,15 +35,16 @@ function TicketTrackPage() {
 
   const confirm = useMutation({
     mutationFn: (satisfied: boolean) => api.confirmTicket(ticketId, satisfied),
-    onSuccess: () => {
-      toast.success("Response recorded");
+    onSuccess: (_data, satisfied) => {
+      toast.success(satisfied ? "Ticket closed" : "Request reopened");
       void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
       void qc.invalidateQueries({ queryKey: ["my-tickets"] });
     },
   });
 
   const feedback = useMutation({
-    mutationFn: () => api.submitFeedback(ticketId, { rating, comment: comment.trim() || undefined }),
+    mutationFn: () =>
+      api.submitFeedback(ticketId, { rating, comment: comment.trim() || undefined }),
     onSuccess: () => {
       toast.success("Feedback submitted");
       void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
@@ -65,53 +72,7 @@ function TicketTrackPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="form-panel lg:col-span-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Request details
-          </h2>
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Form</dt>
-              <dd className="mt-1 text-sm font-medium">{ticket.formTitle}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Submitted by</dt>
-              <dd className="mt-1 text-sm font-medium">{ticket.creatorName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Division</dt>
-              <dd className="mt-1 text-sm">{ticket.division || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Created</dt>
-              <dd className="mt-1 text-sm">
-                {new Date(ticket.createdAt).toLocaleString(undefined, {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-              </dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs text-muted-foreground">Assigned personnel</dt>
-              <dd className="mt-1 text-sm font-medium">
-                {formatAssignedPersonnel(ticket.assignedTo)}
-              </dd>
-            </div>
-          </dl>
-
-          {ticket.description ? (
-            <div className="mt-5 rounded-lg border border-border/80 bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</p>
-              <p className="mt-2 text-sm leading-relaxed">{ticket.description}</p>
-            </div>
-          ) : null}
-
-          {ticket.rejectionReason ? (
-            <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              <strong>Rejected:</strong> {ticket.rejectionReason}
-            </div>
-          ) : null}
-        </div>
+        <TicketRequestDetails ticket={ticket} className="lg:col-span-2" />
 
         <div className="space-y-4">
           <DataPanel title="Assigned personnel">
@@ -120,28 +81,40 @@ function TicketTrackPage() {
                 <UserRound className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-sm font-medium">
-                  {formatAssignedPersonnel(ticket.assignedTo)}
-                </p>
+                <p className="text-sm font-medium">{formatAssignedPersonnel(ticket.assignedTo)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {ticket.assignedTo?.length
-                    ? "ICT personnel handling your request."
-                    : "An admin will assign personnel after your request is approved."}
+                  {ticket.status === "in_progress"
+                    ? "Your request is being handled by assigned ICT personnel."
+                    : ticket.assignedTo?.length
+                      ? "ICT personnel handling your request."
+                      : "An admin will assign personnel after your request is approved."}
                 </p>
               </div>
             </div>
           </DataPanel>
 
+          {ticket.status === "in_progress" ? (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+              Service is in progress. You will be notified when work is complete so you can close
+              this request.
+            </div>
+          ) : null}
+
           {ticket.status === "resolved" ? (
-            <DataPanel title="Confirm resolution">
+            <DataPanel title="Close request">
               <div className="space-y-3 px-4 py-4 sm:px-5">
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  Was your issue resolved satisfactorily?
+                  Service is complete. Close this request when you are satisfied with the
+                  assistance provided.
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => confirm.mutate(true)} disabled={confirm.isPending}>
-                    Yes, close ticket
+                  <Button
+                    size="sm"
+                    onClick={() => confirm.mutate(true)}
+                    disabled={confirm.isPending}
+                  >
+                    Close ticket
                   </Button>
                   <Button
                     size="sm"
@@ -149,14 +122,14 @@ function TicketTrackPage() {
                     onClick={() => confirm.mutate(false)}
                     disabled={confirm.isPending}
                   >
-                    No, reopen
+                    Reopen request
                   </Button>
                 </div>
               </div>
             </DataPanel>
           ) : null}
 
-          {(ticket.status === "closed" || ticket.status === "resolved") && !ticket.feedbackSubmitted ? (
+          {ticket.status === "closed" && !ticket.feedbackSubmitted ? (
             <DataPanel title="Submit feedback">
               <div className="space-y-4 px-4 py-4 sm:px-5">
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -164,16 +137,20 @@ function TicketTrackPage() {
                   Help us improve by rating this assistance.
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rating">Rating (1–5)</Label>
-                  <Input
-                    id="rating"
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={rating}
-                    onChange={(e) => setRating(Number(e.target.value))}
-                    className="max-w-[6rem]"
-                  />
+                  <Label>Rating</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={rating === value ? "default" : "outline"}
+                        onClick={() => setRating(value)}
+                      >
+                        {value}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="comment">Comments</Label>

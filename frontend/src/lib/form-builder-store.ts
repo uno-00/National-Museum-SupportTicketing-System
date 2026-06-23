@@ -53,6 +53,8 @@ export interface FormDraft {
   printTemplate: string;
   /** PNG/JPEG/WebP data URL of the scanned or exported form (optional; can be large). */
   printTemplateImage?: string | null;
+  /** Server path to the uploaded template file (PDF or image). */
+  printTemplateImagePath?: string | null;
   /** Field variables positioned on the uploaded image. */
   printPlacements?: PrintFieldPlacement[];
   /** Font size (px) for answers placed on the print template preview. */

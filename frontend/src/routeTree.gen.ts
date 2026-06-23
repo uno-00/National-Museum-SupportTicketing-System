@@ -33,6 +33,7 @@ import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminApprovalsRouteImport } from './routes/admin/approvals'
 import { Route as ClientRequestsIndexRouteImport } from './routes/client/requests/index'
 import { Route as AdminRequestsIndexRouteImport } from './routes/admin/requests/index'
+import { Route as AdminAssignedIndexRouteImport } from './routes/admin/assigned/index'
 import { Route as RecordsFormsFormIdRouteImport } from './routes/records/forms/$formId'
 import { Route as ClientRequestsTicketIdRouteImport } from './routes/client/requests/$ticketId'
 import { Route as AdminRequestsTicketIdRouteImport } from './routes/admin/requests/$ticketId'
@@ -157,6 +158,11 @@ const AdminRequestsIndexRoute = AdminRequestsIndexRouteImport.update({
   path: '/requests/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAssignedIndexRoute = AdminAssignedIndexRouteImport.update({
+  id: '/assigned/',
+  path: '/assigned/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const RecordsFormsFormIdRoute = RecordsFormsFormIdRouteImport.update({
   id: '/forms/$formId',
   path: '/forms/$formId',
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
   '/client/requests/$ticketId': typeof ClientRequestsTicketIdRoute
   '/records/forms/$formId': typeof RecordsFormsFormIdRoute
+  '/admin/assigned/': typeof AdminAssignedIndexRoute
   '/admin/requests/': typeof AdminRequestsIndexRoute
   '/client/requests/': typeof ClientRequestsIndexRoute
 }
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
   '/client/requests/$ticketId': typeof ClientRequestsTicketIdRoute
   '/records/forms/$formId': typeof RecordsFormsFormIdRoute
+  '/admin/assigned': typeof AdminAssignedIndexRoute
   '/admin/requests': typeof AdminRequestsIndexRoute
   '/client/requests': typeof ClientRequestsIndexRoute
 }
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
   '/client/requests/$ticketId': typeof ClientRequestsTicketIdRoute
   '/records/forms/$formId': typeof RecordsFormsFormIdRoute
+  '/admin/assigned/': typeof AdminAssignedIndexRoute
   '/admin/requests/': typeof AdminRequestsIndexRoute
   '/client/requests/': typeof ClientRequestsIndexRoute
 }
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/admin/requests/$ticketId'
     | '/client/requests/$ticketId'
     | '/records/forms/$formId'
+    | '/admin/assigned/'
     | '/admin/requests/'
     | '/client/requests/'
   fileRoutesByTo: FileRoutesByTo
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/admin/requests/$ticketId'
     | '/client/requests/$ticketId'
     | '/records/forms/$formId'
+    | '/admin/assigned'
     | '/admin/requests'
     | '/client/requests'
   id:
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/admin/requests/$ticketId'
     | '/client/requests/$ticketId'
     | '/records/forms/$formId'
+    | '/admin/assigned/'
     | '/admin/requests/'
     | '/client/requests/'
   fileRoutesById: FileRoutesById
@@ -530,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRequestsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/assigned/': {
+      id: '/admin/assigned/'
+      path: '/assigned'
+      fullPath: '/admin/assigned/'
+      preLoaderRoute: typeof AdminAssignedIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/records/forms/$formId': {
       id: '/records/forms/$formId'
       path: '/forms/$formId'
@@ -562,6 +581,7 @@ interface AdminRouteChildren {
   AdminMyFormsRoute: typeof AdminMyFormsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRequestsTicketIdRoute: typeof AdminRequestsTicketIdRoute
+  AdminAssignedIndexRoute: typeof AdminAssignedIndexRoute
   AdminRequestsIndexRoute: typeof AdminRequestsIndexRoute
 }
 
@@ -573,6 +593,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMyFormsRoute: AdminMyFormsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRequestsTicketIdRoute: AdminRequestsTicketIdRoute,
+  AdminAssignedIndexRoute: AdminAssignedIndexRoute,
   AdminRequestsIndexRoute: AdminRequestsIndexRoute,
 }
 

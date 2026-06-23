@@ -43,6 +43,22 @@ recordsRouter.get("/forms", async (req, res, next) => {
   }
 });
 
+recordsRouter.get("/forms/:id/document.pdf", async (req, res, next) => {
+  try {
+    const form = await formService.getFormById(paramId(req));
+    const { generateFormPreviewPdf } = await import("../services/formDocumentService.js");
+    const bytes = await generateFormPreviewPdf(paramId(req));
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${form.refNumber.replace(/[^a-zA-Z0-9._-]/g, "_")}.pdf"`,
+    );
+    res.send(Buffer.from(bytes));
+  } catch (e) {
+    next(e);
+  }
+});
+
 recordsRouter.get("/forms/:id", async (req, res, next) => {
   try {
     const form = await formService.getFormById(paramId(req));

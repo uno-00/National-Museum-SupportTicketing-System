@@ -51,8 +51,8 @@ function MyFormsPage() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <p className="flex items-center gap-2 font-medium">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            {needsRevision.length} form{needsRevision.length === 1 ? "" : "s"} returned by Records — review the
-            remarks below, revise in Form Builder, then send again.
+            {needsRevision.length} form{needsRevision.length === 1 ? "" : "s"} returned by Records —
+            review the remarks below, revise in Form Builder, then send again.
           </p>
         </div>
       ) : (

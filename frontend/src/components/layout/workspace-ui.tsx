@@ -93,7 +93,9 @@ export function DashboardHero({
         {title}
       </h1>
       {description ? (
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          {description}
+        </p>
       ) : null}
       {meta ? <div className="mt-3">{meta}</div> : null}
     </div>
@@ -112,7 +114,13 @@ export function DashboardAlert({
   action?: ReactNode;
 }) {
   return (
-    <div className={cn("dashboard-alert", tone === "warning" && "dashboard-alert-warning", tone === "danger" && "dashboard-alert-danger")}>
+    <div
+      className={cn(
+        "dashboard-alert",
+        tone === "warning" && "dashboard-alert-warning",
+        tone === "danger" && "dashboard-alert-danger",
+      )}
+    >
       <p className="font-medium text-foreground">{title}</p>
       {children ? <div className="mt-2 text-sm text-muted-foreground">{children}</div> : null}
       {action ? <div className="mt-3">{action}</div> : null}
@@ -235,9 +243,7 @@ export function StatusBadge({ status }: { status: string }) {
 export function FormStatusBadge({ status }: { status: FormStatus }) {
   const tone = FORM_STATUS_TONE[status];
   return (
-    <span className={cn("status-badge", statusToneClass[tone])}>
-      {FORM_STATUS_LABEL[status]}
-    </span>
+    <span className={cn("status-badge", statusToneClass[tone])}>{FORM_STATUS_LABEL[status]}</span>
   );
 }
 
@@ -256,7 +262,9 @@ export function EmptyState({
         <Inbox className="h-6 w-6" />
       </div>
       <p className="font-medium text-foreground">{title}</p>
-      {description ? <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p> : null}
+      {description ? (
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
+      ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
@@ -286,7 +294,9 @@ export function PortalTile({
         <p className="font-semibold text-foreground">{label}</p>
         {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
         {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
-        {showPath ? <p className="mt-1.5 font-mono text-[11px] text-muted-foreground/80">{to}</p> : null}
+        {showPath ? (
+          <p className="mt-1.5 font-mono text-[11px] text-muted-foreground/80">{to}</p>
+        ) : null}
       </div>
       <span className="text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
         Open →

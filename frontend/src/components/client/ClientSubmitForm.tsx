@@ -1,20 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2, Upload } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ClientFieldInput } from "@/components/client/ClientFieldInput";
+import { ClientFormFileViewerDialog } from "@/components/client/ClientFormFileViewerDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import type { FormRecord, LiveFormField } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth";
+import { fieldHasAnswer } from "@/lib/form-field-values";
 import { CLIENT_REQUESTS } from "@/lib/navigation";
+import { dataUrlToFile } from "@/lib/upload-data-url";
 
 type ClientSubmitFormProps = {
   initialFormId?: string;
 };
+
+async function prepareAnswersForSubmit(
+  fields: LiveFormField[],
+  fieldAnswers: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const prepared = { ...fieldAnswers };
+
+  for (const field of fields) {
+    if (field.type !== "signature") continue;
+    const value = prepared[field.variable];
+    if (typeof value !== "string" || !value.startsWith("data:image/")) continue;
+
+    const file = await dataUrlToFile(
+      value,
+      `signature-${field.variable.replace(/\W/g, "") || "field"}`,
+    );
+    const { file: uploaded } = await api.uploadFile(file);
+    prepared[field.variable] = uploaded.url;
+  }
+
+  return prepared;
+}
 
 export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
   const { user } = useAuth();
@@ -23,6 +47,9 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
   const [selectedFormId, setSelectedFormId] = useState(initialFormId ?? "");
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [uploading, setUploading] = useState(false);
+  const [filePreviewOpen, setFilePreviewOpen] = useState(false);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   const { data: formsData, isLoading: formsLoading } = useQuery({
     queryKey: ["published-forms"],
@@ -42,17 +69,17 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
   const form = formData?.form;
 
   const submitMutation = useMutation({
-    mutationFn: (f: FormRecord) => {
-      const attachment = answers.__attachment as
-        | { url: string; originalName: string; mimeType: string }
-        | undefined;
-      const { __attachment: _, ...fieldAnswers } = answers;
+    mutationFn: async ({
+      form: f,
+      fieldAnswers,
+    }: {
+      form: FormRecord;
+      fieldAnswers: Record<string, unknown>;
+    }) => {
+      const answersPayload = await prepareAnswersForSubmit(f.fields, fieldAnswers);
       return api.createTicket({
         formId: f._id,
-        answers: fieldAnswers,
-        attachmentUrl: attachment?.url,
-        attachmentName: attachment?.originalName,
-        attachmentMimeType: attachment?.mimeType,
+        answers: answersPayload,
       });
     },
     onSuccess: (res) => {
@@ -70,18 +97,15 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
     setAnswers((prev) => ({ ...prev, [variable]: value }));
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFieldFileUpload = async (field: LiveFormField, file: File) => {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Only PDF files are allowed.");
+      return;
+    }
     setUploading(true);
     try {
       const { file: uploaded } = await api.uploadFile(file);
-      setAnswers((prev) => ({
-        ...prev,
-        __attachment: {
-          url: uploaded.url,
-          originalName: uploaded.originalName,
-          mimeType: uploaded.mimeType,
-        },
-      }));
+      setField(field.variable, uploaded.url);
       toast.success("File uploaded");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
@@ -112,8 +136,9 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
       <div className="page-hero">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Submit Request</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Submitting as <strong className="text-foreground">{user?.name ?? user?.email ?? "your account"}</strong>.
-          This request will appear in your list only.
+          Submitting as{" "}
+          <strong className="text-foreground">{user?.name ?? user?.email ?? "your account"}</strong>
+          . This request will appear in your list only.
         </p>
       </div>
 
@@ -122,133 +147,88 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
           <Label>Select form</Label>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
-          value={selectedFormId}
-          onChange={(e) => {
-            setSelectedFormId(e.target.value);
-            setAnswers({});
-          }}
-        >
-          <option value="">Select a form…</option>
-          {forms.map((f) => (
-            <option key={f._id} value={f._id}>{f.title}</option>
-          ))}
-        </select>
-      </div>
-
-      {selectedFormId && formLoading ? (
-        <p className="text-sm text-muted-foreground">Loading form fields…</p>
-      ) : form ? (
-        <form
-          className="space-y-5 border-t border-border/70 pt-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitMutation.mutate(form);
-          }}
-        >
-          {form.fields.map((field) => (
-            <FieldInput
-              key={field.id}
-              field={field}
-              value={answers[field.variable]}
-              onChange={(v) => setField(field.variable, v)}
-              onFile={handleFileUpload}
-              uploading={uploading}
-            />
-          ))}
-          <Button type="submit" disabled={submitMutation.isPending} className="shadow-sm">
-            {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
-          </Button>
-        </form>
-      ) : null}
-      </div>
-    </div>
-  );
-}
-
-function FieldInput({
-  field,
-  value,
-  onChange,
-  onFile,
-  uploading,
-}: {
-  field: LiveFormField;
-  value: unknown;
-  onChange: (v: unknown) => void;
-  onFile: (f: File) => void;
-  uploading: boolean;
-}) {
-  const id = `field-${field.variable}`;
-  const label = (
-    <Label htmlFor={id}>
-      {field.label}
-      {field.required ? <span className="text-destructive"> *</span> : null}
-    </Label>
-  );
-
-  switch (field.type) {
-    case "textarea":
-      return (
-        <div className="space-y-2">
-          {label}
-          <Textarea id={id} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} required={field.required} />
-        </div>
-      );
-    case "dropdown":
-      return (
-        <div className="space-y-2">
-          {label}
-          <select
-            id={id}
-            className="flex h-10 w-full rounded-md border px-3 text-sm"
-            value={String(value ?? "")}
-            onChange={(e) => onChange(e.target.value)}
-            required={field.required}
+            value={selectedFormId}
+            onChange={(e) => {
+              setSelectedFormId(e.target.value);
+              setAnswers({});
+            }}
           >
-            <option value="">Select…</option>
-            {(field.options ?? []).map((o) => (
-              <option key={o} value={o}>{o}</option>
+            <option value="">Select a form…</option>
+            {forms.map((f) => (
+              <option key={f._id} value={f._id}>
+                {f.title}
+              </option>
             ))}
           </select>
         </div>
-      );
-    case "checkbox":
-      return (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} />
-          {field.label}
-        </label>
-      );
-    case "date":
-      return (
-        <div className="space-y-2">
-          {label}
-          <Input id={id} type="date" value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} required={field.required} />
-        </div>
-      );
-    case "file":
-      return (
-        <div className="space-y-2">
-          {label}
-          <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
-            <Upload className="h-4 w-4" />
-            {uploading ? "Uploading…" : "Choose file"}
-            <input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
-          </label>
-        </div>
-      );
-    default:
-      return (
-        <div className="space-y-2">
-          {label}
-          <Input
-            id={id}
-            value={String(value ?? "")}
-            placeholder={field.placeholder}
-            onChange={(e) => onChange(e.target.value)}
-            required={field.required}
-          />
-        </div>
-      );
-  }
+
+        {selectedFormId && formLoading ? (
+          <p className="text-sm text-muted-foreground">Loading form fields…</p>
+        ) : form ? (
+          <>
+            {form.printTemplateImagePath?.trim() ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 bg-muted/20 px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Review the uploaded TA form before filling in your request.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setFilePreviewOpen(true)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View form file
+                </Button>
+              </div>
+            ) : null}
+
+            <form
+              className="space-y-5 border-t border-border/70 pt-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const current = answersRef.current;
+                const hasValue = form.fields.some((field) =>
+                  fieldHasAnswer(field, current[field.variable]),
+                );
+                if (!hasValue) {
+                  toast.error("Fill in at least one field before submitting.");
+                  return;
+                }
+                submitMutation.mutate({ form, fieldAnswers: { ...current } });
+              }}
+            >
+              {form.fields.map((field) => (
+                <ClientFieldInput
+                  key={field.id}
+                  field={field}
+                  value={answers[field.variable]}
+                  onChange={(v) => setField(field.variable, v)}
+                  onFile={field.type === "file" ? (file) => handleFieldFileUpload(field, file) : undefined}
+                  uploading={uploading}
+                />
+              ))}
+              <Button type="submit" disabled={submitMutation.isPending} className="shadow-sm">
+                {submitMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit request"
+                )}
+              </Button>
+            </form>
+
+            <ClientFormFileViewerDialog
+              formId={form._id}
+              formTitle={form.title}
+              refNumber={form.refNumber}
+              answers={answers}
+              open={filePreviewOpen}
+              onOpenChange={setFilePreviewOpen}
+            />
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
 }

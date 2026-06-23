@@ -17,6 +17,17 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const isPdf = file.mimetype === "application/pdf" || /\.pdf$/i.test(file.originalname);
+    const isImage =
+      /^image\/(png|jpeg|webp)$/i.test(file.mimetype) ||
+      /\.(png|jpe?g|webp)$/i.test(file.originalname);
+    if (!isPdf && !isImage) {
+      cb(new Error("Only PDF, PNG, JPG, or WebP files are allowed"));
+      return;
+    }
+    cb(null, true);
+  },
 });
 
 export const uploadsRouter = Router();

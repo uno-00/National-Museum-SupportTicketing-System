@@ -47,7 +47,10 @@ function ActivityLogsPage() {
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={4}>
-                    <EmptyState title="No activity yet" description="Actions will be logged here as they occur." />
+                    <EmptyState
+                      title="No activity yet"
+                      description="Actions will be logged here as they occur."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -57,7 +60,9 @@ function ActivityLogsPage() {
                       {new Date(a.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3.5 sm:px-5">{a.actorName}</td>
-                    <td className="px-4 py-3.5 sm:px-5 capitalize">{a.action.replace(/_/g, " ")}</td>
+                    <td className="px-4 py-3.5 sm:px-5 capitalize">
+                      {a.action.replace(/_/g, " ")}
+                    </td>
                     <td className="px-4 py-3.5 sm:px-5">{a.summary}</td>
                   </tr>
                 ))

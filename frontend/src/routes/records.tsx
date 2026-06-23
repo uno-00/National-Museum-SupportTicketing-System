@@ -29,7 +29,11 @@ export const Route = createFileRoute("/records")({
 function RecordsLayout() {
   const { user, sessionReady, logout, canQuery } = useRecordsSession();
 
-  const { data, isError, isLoading: notificationsLoading } = useQuery({
+  const {
+    data,
+    isError,
+    isLoading: notificationsLoading,
+  } = useQuery({
     queryKey: ["records-dashboard"],
     queryFn: () => api.recordsDashboard(),
     refetchOnMount: "always",

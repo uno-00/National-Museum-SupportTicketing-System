@@ -40,7 +40,9 @@ export function NotificationBell({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "relative rounded-lg p-2 transition-colors",
-          open ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          open
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
         aria-label="Notifications"
         aria-expanded={open}
@@ -59,7 +61,11 @@ export function NotificationBell({
             <div>
               <p className="text-sm font-semibold">Notifications</p>
               <p className="text-xs text-muted-foreground">
-                {loading ? "Checking for updates…" : count > 0 ? `${count} new item${count === 1 ? "" : "s"}` : "You're all caught up"}
+                {loading
+                  ? "Checking for updates…"
+                  : count > 0
+                    ? `${count} new item${count === 1 ? "" : "s"}`
+                    : "You're all caught up"}
               </p>
             </div>
             {count > 0 ? (
@@ -86,7 +92,9 @@ export function NotificationBell({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">{item.title}</p>
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {item.title}
+                          </p>
                           <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                             {item.message}
                           </p>

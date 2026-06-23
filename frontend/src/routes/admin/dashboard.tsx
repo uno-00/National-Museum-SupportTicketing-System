@@ -77,7 +77,10 @@ function AdminDashboardPage() {
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <span>
                   <span className="font-medium text-foreground">{f.title}</span>
-                  <span className="text-muted-foreground"> — {f.reviewRemarks?.trim() || "No remarks provided"}</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — {f.reviewRemarks?.trim() || "No remarks provided"}
+                  </span>
                 </span>
               </li>
             ))}
@@ -88,7 +91,8 @@ function AdminDashboardPage() {
         </DashboardAlert>
       ) : (
         <DashboardAlert tone="info" title="Form workflow reminder">
-          Submit new forms to Records for review. Once published, clients can use them to file requests.
+          Submit new forms to Records for review. Once published, clients can use them to file
+          requests.
         </DashboardAlert>
       )}
 

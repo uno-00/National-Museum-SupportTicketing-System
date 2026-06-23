@@ -21,6 +21,7 @@ export const ADMIN_FORMS = "/admin/forms";
 export const ADMIN_MY_FORMS = "/admin/my-forms";
 export const ADMIN_APPROVALS = "/admin/approvals";
 export const ADMIN_REQUESTS = "/admin/requests";
+export const ADMIN_ASSIGNED = "/admin/assigned";
 export const ADMIN_REPORTS = "/admin/reports";
 
 export const RECORDS_DASHBOARD = "/records/dashboard";

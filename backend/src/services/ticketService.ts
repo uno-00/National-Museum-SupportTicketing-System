@@ -4,6 +4,7 @@ import type { AuthUser } from "../middleware/auth.js";
 import type { TicketStatus } from "../constants.js";
 import { AppError } from "../utils/errors.js";
 import { generateTicketNumber } from "../utils/ticketNumber.js";
+import { normalizeTicketAnswers, resolveAnswerForVariable } from "../utils/placementValues.js";
 import * as formService from "./formService.js";
 import { logActivity } from "./activityService.js";
 
@@ -20,19 +21,42 @@ export async function createTicketFromClient(
   const form = await formService.getPublishedForm(formId);
   const subject = String(body.answers.txt_subject ?? body.answers.subject ?? form.title);
 
+  if (
+    body.attachmentUrl &&
+    body.attachmentMimeType &&
+    body.attachmentMimeType !== "application/pdf" &&
+    !/\.pdf$/i.test(body.attachmentName ?? body.attachmentUrl)
+  ) {
+    throw new AppError(400, "Only PDF attachments are allowed");
+  }
+
+  const storedAnswers = normalizeTicketAnswers(form.fields, body.answers ?? {});
+
+  const formatAnswer = (field: { type: string; label: string; variable: string }, value: unknown) => {
+    if (value === undefined || value === null || value === "") return "—";
+    if (field.type === "checkbox") return value === true || value === "true" ? "Yes" : "No";
+    return String(value);
+  };
+
   const ticket = await Ticket.create({
     ticketNumber: generateTicketNumber(),
     formId,
     formTitle: form.title,
     title: `${form.title} — ${subject}`,
-    description: Object.entries(body.answers)
-      .map(([k, v]) => `${k}: ${String(v ?? "")}`)
+    description: form.fields
+      .map((field) => {
+        const variable = field.variable ?? "";
+        return `${field.label}: ${formatAnswer(
+          { type: field.type ?? "textbox", label: field.label ?? variable, variable },
+          resolveAnswerForVariable(storedAnswers, variable),
+        )}`;
+      })
       .join("\n"),
     creatorId: user.id,
     creatorName: user.name,
     creatorEmail: user.email,
     division: user.division,
-    answers: body.answers,
+    answers: storedAnswers,
     attachmentUrl: body.attachmentUrl ?? "",
     attachmentName: body.attachmentName ?? "",
     attachmentMimeType: body.attachmentMimeType ?? "",
@@ -93,7 +117,10 @@ export async function getTicketById(id: string) {
   const ticket = await Ticket.findById(id)
     .populate("assignedTo", "name email division")
     .populate("creatorId", "name email division")
-    .populate("formId", "title refNumber fields")
+    .populate(
+      "formId",
+      "title refNumber fields printTemplate printTemplateImagePath printPlacements printPlacementFontSize",
+    )
     .lean();
   if (!ticket) throw new AppError(404, "Ticket not found");
   return ticket;
@@ -157,12 +184,18 @@ export async function rejectTicket(actor: AuthUser, id: string, reason: string) 
 export async function assignTicket(actor: AuthUser, id: string, assigneeIds: string[]) {
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
+  if (ticket.status === "pending_approval") {
+    throw new AppError(400, "Approve the request before assigning personnel");
+  }
+  if (["rejected", "closed"].includes(ticket.status)) {
+    throw new AppError(400, "Cannot assign personnel to a closed or rejected request");
+  }
 
   const users = await User.find({ _id: { $in: assigneeIds }, role: "admin", active: true });
   if (users.length === 0) throw new AppError(400, "No valid personnel to assign");
 
   ticket.assignedTo = assigneeIds as never;
-  if (ticket.status === "approved" || ticket.status === "open") {
+  if (!["resolved", "closed"].includes(ticket.status)) {
     ticket.status = "in_progress";
   }
   await ticket.save();
@@ -171,21 +204,29 @@ export async function assignTicket(actor: AuthUser, id: string, assigneeIds: str
     action: "ticket_assigned",
     entityType: "ticket",
     entityId: ticket._id.toString(),
-    summary: `Request ${ticket.ticketNumber} assigned to ${users.map((u) => u.name).join(", ")}`,
+    summary: `Request ${ticket.ticketNumber} assigned to ${users.map((u) => u.name).join(", ")} — in progress`,
     meta: { assigneeIds },
   });
 
   return ticket.populate("assignedTo", "name email division");
 }
 
+const ADMIN_STATUS_UPDATES: TicketStatus[] = ["open", "in_progress", "pending", "reopened"];
+
 export async function updateTicketStatus(actor: AuthUser, id: string, status: TicketStatus) {
+  if (status === "closed") {
+    throw new AppError(403, "Only the client can close a completed request");
+  }
+  if (!ADMIN_STATUS_UPDATES.includes(status)) {
+    throw new AppError(400, "Invalid status update");
+  }
+
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
 
   const prev = ticket.status;
   ticket.status = status;
   if (status === "resolved") ticket.resolvedAt = new Date();
-  if (status === "closed") ticket.closedAt = new Date();
   await ticket.save();
 
   await logActivity(actor, {
@@ -196,6 +237,42 @@ export async function updateTicketStatus(actor: AuthUser, id: string, status: Ti
   });
 
   return ticket;
+}
+
+export async function listTicketsAssignedToAdmin(userId: string) {
+  return Ticket.find({
+    assignedTo: userId,
+    status: { $in: ["open", "in_progress", "pending", "reopened"] },
+  })
+    .sort({ updatedAt: -1 })
+    .populate("assignedTo", "name email division")
+    .lean();
+}
+
+export async function completeTicketService(actor: AuthUser, id: string) {
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw new AppError(404, "Ticket not found");
+
+  const isAssigned = ticket.assignedTo.some((assigneeId) => assigneeId.toString() === actor.id);
+  if (!isAssigned) {
+    throw new AppError(403, "Only assigned personnel can mark this request as complete");
+  }
+  if (!["open", "in_progress", "pending", "reopened"].includes(ticket.status)) {
+    throw new AppError(400, "This request is not awaiting service completion");
+  }
+
+  ticket.status = "resolved";
+  ticket.resolvedAt = new Date();
+  await ticket.save();
+
+  await logActivity(actor, {
+    action: "ticket_service_completed",
+    entityType: "ticket",
+    entityId: ticket._id.toString(),
+    summary: `Service completed for ${ticket.ticketNumber} — awaiting client confirmation`,
+  });
+
+  return ticket.populate("assignedTo", "name email division");
 }
 
 export async function clientConfirmResolution(user: AuthUser, id: string, satisfied: boolean) {
@@ -234,15 +311,14 @@ export async function submitFeedback(
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
   if (ticket.creatorId.toString() !== user.id) throw new AppError(403, "Not your request");
+  if (ticket.status !== "closed") {
+    throw new AppError(400, "Close the request before submitting feedback");
+  }
   if (body.rating < 1 || body.rating > 5) throw new AppError(400, "Rating must be 1–5");
 
   ticket.feedbackRating = body.rating;
   ticket.feedbackComment = body.comment ?? "";
   ticket.feedbackSubmitted = true;
-  if (ticket.status === "resolved") {
-    ticket.status = "closed";
-    ticket.closedAt = new Date();
-  }
   await ticket.save();
 
   await logActivity(user, {

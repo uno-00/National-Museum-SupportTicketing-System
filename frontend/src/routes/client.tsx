@@ -5,11 +5,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { api } from "@/lib/api/client";
 import { ensurePortalRole } from "@/lib/portal-guard";
 import { clientTicketNotifications } from "@/lib/notifications";
-import {
-  CLIENT_DASHBOARD,
-  CLIENT_REQUESTS,
-  isClientRole,
-} from "@/lib/navigation";
+import { CLIENT_DASHBOARD, CLIENT_REQUESTS, isClientRole } from "@/lib/navigation";
 
 export const Route = createFileRoute("/client")({
   ssr: false,

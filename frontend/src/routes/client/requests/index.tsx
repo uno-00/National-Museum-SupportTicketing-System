@@ -88,7 +88,10 @@ function MyRequestsPage() {
                       <Link
                         to="/client/requests/$ticketId"
                         params={{ ticketId: t._id }}
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shadow-sm")}
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "shadow-sm",
+                        )}
                       >
                         View details
                       </Link>
