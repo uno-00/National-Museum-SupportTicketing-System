@@ -5,7 +5,8 @@ import { config } from "../config.js";
 import { Form } from "../models/Form.js";
 import { AppError } from "../utils/errors.js";
 import { embedTemplateWithPlacements, type Placement } from "./templateEmbedService.js";
-import { parsePlacementsFromTemplate } from "../utils/placementValues.js";
+import { displayValueForChoicePlacement } from "../utils/placementChoiceValues.js";
+import { parsePlacementsFromTemplate, placementValueKey } from "../utils/placementValues.js";
 
 type FormField = {
   type: string;
@@ -28,8 +29,18 @@ function buildLayoutPreviewValues(fields: FormField[], placements: Placement[]) 
     const field =
       fieldByVar.get(placement.variable) ??
       fieldByVar.get(inner) ??
-      fieldByVar.get(placement.variable.startsWith("{{") ? placement.variable : `{{${inner}}}`);
-    map[placement.variable] = (field?.label ?? placement.label ?? "").trim();
+      fieldByVar.get(placement.variable.startsWith("{{") ? placement.variable : `{{${inner}}}`) ??
+      null;
+
+    const choiceDisplay = field
+      ? displayValueForChoicePlacement(field, placement.label, undefined, true)
+      : null;
+    if (choiceDisplay !== null && choiceDisplay !== "") {
+      map[placementValueKey(placement)] = choiceDisplay;
+      continue;
+    }
+
+    map[placementValueKey(placement)] = (field?.label ?? placement.label ?? "").trim();
   }
 
   return map;

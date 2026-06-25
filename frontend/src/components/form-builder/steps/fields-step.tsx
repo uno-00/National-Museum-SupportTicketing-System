@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, GripVertical, Plus, Trash2, Upload } from "lucide-react";
 import {
   nextVariable,
@@ -6,6 +6,11 @@ import {
   type FormDraft,
   type FormField,
 } from "@/lib/form-builder-store";
+import {
+  TA_SERVICE_TYPE_OPTIONS,
+  normalizeChoiceFieldOptions,
+  taServiceTypesPlaceholder,
+} from "@/lib/form-builder/ta-service-types";
 import { FIELD_ELEMENTS } from "@/lib/form-builder/constants";
 import { inputCls, SectionHeader, WizardCard, WizardField } from "../shared";
 
@@ -14,10 +19,48 @@ type FieldsStepProps = {
   update: (patch: Partial<FormDraft>) => void;
 };
 
+function isOptionField(type: FormField["type"]) {
+  return type === "dropdown" || type === "radio" || type === "checkbox";
+}
+
+function parseFieldOptions(text: string): string[] {
+  return text
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function formatFieldOptions(options: string[] | undefined) {
+  return normalizeChoiceFieldOptions(options).join(", ");
+}
+
 export function FieldsStep({ draft, update }: FieldsStepProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragFieldId, setDragFieldId] = useState<string | null>(null);
+  const [optionsDraft, setOptionsDraft] = useState("");
   const selected = draft.fields.find((f) => f.id === selectedId) || null;
+
+  const updateField = (id: string, patch: Partial<FormField>) =>
+    update({ fields: draft.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) });
+
+  const commitOptionsDraft = (fieldId: string, draftText = optionsDraft) => {
+    const field = draft.fields.find((f) => f.id === fieldId);
+    if (!field || !isOptionField(field.type)) return;
+    updateField(fieldId, { options: parseFieldOptions(draftText) });
+  };
+
+  const selectField = (id: string) => {
+    if (selectedId && selectedId !== id) commitOptionsDraft(selectedId);
+    setSelectedId(id);
+  };
+
+  useEffect(() => {
+    if (!selected || !isOptionField(selected.type)) {
+      setOptionsDraft("");
+      return;
+    }
+    setOptionsDraft(formatFieldOptions(selected.options));
+  }, [selected?.id]);
 
   const reorderFields = (fromId: string, toId: string) => {
     if (fromId === toId) return;
@@ -37,7 +80,7 @@ export function FieldsStep({ draft, update }: FieldsStepProps) {
       textbox: "Untitled text",
       textarea: "Long text",
       dropdown: "Select option",
-      checkbox: "Choices",
+      checkbox: "Type",
       radio: "Choose one",
       date: "Date",
       file: "Attachment",
@@ -52,15 +95,17 @@ export function FieldsStep({ draft, update }: FieldsStepProps) {
       label: labelMap[type] ?? "Field",
       required: false,
       ...(type === "dropdown" || type === "radio" || type === "checkbox"
-        ? { options: ["Option 1", "Option 2"] }
+        ? {
+            options:
+              type === "checkbox"
+                ? [...TA_SERVICE_TYPE_OPTIONS]
+                : ["Option 1", "Option 2"],
+          }
         : {}),
     };
     update({ fields: [...draft.fields, f] });
-    setSelectedId(id);
+    selectField(id);
   };
-
-  const updateField = (id: string, patch: Partial<FormField>) =>
-    update({ fields: draft.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)) });
 
   const removeField = (id: string) => {
     update({ fields: draft.fields.filter((f) => f.id !== id) });
@@ -109,7 +154,7 @@ export function FieldsStep({ draft, update }: FieldsStepProps) {
                   key={f.id}
                   type="button"
                   draggable
-                  onClick={() => setSelectedId(f.id)}
+                  onClick={() => selectField(f.id)}
                   onDragStart={(e) => {
                     setDragFieldId(f.id);
                     e.dataTransfer.effectAllowed = "move";
@@ -190,22 +235,31 @@ export function FieldsStep({ draft, update }: FieldsStepProps) {
                 onChange={(e) => updateField(selected.id, { placeholder: e.target.value })}
               />
             </WizardField>
-            {(selected.type === "dropdown" ||
-              selected.type === "radio" ||
-              selected.type === "checkbox") && (
+            {isOptionField(selected.type) && (
               <WizardField label="Options" hint="comma-separated">
                 <input
                   className={inputCls}
-                  value={(selected.options ?? []).join(", ")}
-                  onChange={(e) =>
-                    updateField(selected.id, {
-                      options: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
+                  value={optionsDraft}
+                  placeholder={taServiceTypesPlaceholder()}
+                  onChange={(e) => setOptionsDraft(e.target.value)}
+                  onBlur={() => commitOptionsDraft(selected.id)}
                 />
+                {selected.type === "checkbox" ? (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs font-medium text-maroon hover:underline"
+                    onClick={() => {
+                      const text = taServiceTypesPlaceholder();
+                      setOptionsDraft(text);
+                      commitOptionsDraft(selected.id, text);
+                    }}
+                  >
+                    Use TA service types (6 options)
+                  </button>
+                ) : null}
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  Separate each choice with a comma. Client can check all services that apply.
+                </p>
               </WizardField>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -263,17 +317,31 @@ function FieldPreview({ field }: { field: FormField }) {
         </div>
       );
     case "radio":
-    case "checkbox":
       return (
         <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-          {(field.options ?? []).map((o) => (
+          {normalizeChoiceFieldOptions(field.options).map((o) => (
             <span key={o} className="inline-flex items-center gap-1.5">
-              <span
-                className={`h-3.5 w-3.5 ${field.type === "radio" ? "rounded-full" : "rounded-sm"} border border-border`}
-              />
+              <span className="h-3.5 w-3.5 rounded-full border border-border" />
               {o}
             </span>
           ))}
+        </div>
+      );
+    case "checkbox":
+      return (
+        <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+          {normalizeChoiceFieldOptions(field.options).map((o) => {
+            const isOthers = /^others?$/i.test(o.trim());
+            return (
+              <span key={o} className="inline-flex items-center gap-1.5">
+                <span className="h-3.5 w-3.5 shrink-0 rounded-sm border border-border" />
+                <span className="min-w-0">{o}</span>
+                {isOthers ? (
+                  <span className="ml-1 h-4 min-w-[5rem] flex-1 border-b border-border/80" />
+                ) : null}
+              </span>
+            );
+          })}
         </div>
       );
     case "date":

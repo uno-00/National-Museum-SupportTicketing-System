@@ -41,7 +41,8 @@ export function TicketPdfViewerDialog({
             {ticketNumber ? `${ticketNumber} — Request file` : "Request file"}
           </DialogTitle>
           <DialogDescription>
-            Form with submitted answers on the template. View only.
+            Submitted form with answers, followed by the work procedure when uploaded. Scroll to review
+            both before approving. View only.
           </DialogDescription>
         </DialogHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/20">

@@ -1,3 +1,5 @@
+import { isPlacementCheckmark } from "../utils/placementChoiceValues.js";
+import { placementValueKey } from "../utils/placementValues.js";
 import fs from "node:fs";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
@@ -21,6 +23,27 @@ function resolveLocalUploadPath(urlPath: string) {
 function placementBaselineFromTop(pageHeight: number, yPct: number, fontSize: number) {
   const anchorTop = (yPct / 100) * pageHeight;
   return anchorTop - fontSize * (1 - FONT_ASCENDER_RATIO);
+}
+
+/** Vector checkmark for checkbox placements (Helvetica cannot render ✓ reliably). */
+function drawPlacementCheckmark(
+  page: PDFPage,
+  anchorX: number,
+  baselineFromTop: number,
+  pageHeight: number,
+  fontSize: number,
+) {
+  const size = fontSize * 0.95;
+  const thickness = Math.max(0.8, fontSize * 0.11);
+  const color = rgb(0.1, 0.1, 0.1);
+  const baselineY = pageHeight - baselineFromTop;
+
+  const start = { x: anchorX, y: baselineY - size * 0.12 };
+  const mid = { x: anchorX + size * 0.38, y: baselineY - size * 0.52 };
+  const end = { x: anchorX + size * 0.95, y: baselineY + size * 0.18 };
+
+  page.drawLine({ start, end: mid, thickness, color });
+  page.drawLine({ start: mid, end, thickness, color });
 }
 
 async function drawPlacementImage(
@@ -74,13 +97,19 @@ async function drawPlacementsOnPage(
       if (drawn) continue;
     }
 
-    const answered = values[placement.variable]?.trim() || "";
+    const answered = values[placementValueKey(placement)]?.trim() || "";
     const text = answered || (emptyFallbackToLabel ? placement.label : "");
     if (!text) continue;
 
     const x = (placement.xPct / 100) * width;
     const baselineFromTop = placementBaselineFromTop(height, placement.yPct, fontSize);
     const y = height - baselineFromTop;
+    const isCheck = isPlacementCheckmark(text);
+
+    if (isCheck) {
+      drawPlacementCheckmark(page, x, baselineFromTop, height, fontSize);
+      continue;
+    }
 
     page.drawText(text, {
       x,

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { ArrowLeft, Inbox } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowLeft, Inbox, Loader2 } from "lucide-react";
+import type { ReactNode, SelectHTMLAttributes } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { formatTicketStatus, statusToneClass, ticketStatusTone } from "@/lib/ticket-status";
 import type { FormStatus } from "@/lib/api/types";
@@ -53,10 +53,122 @@ export function WorkspacePageHeader({
         {meta ? <div className="mt-3">{meta}</div> : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/80 p-1.5 shadow-sm backdrop-blur-sm">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-sm backdrop-blur-sm">
           {actions}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export function ActionPanel({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("action-panel", className)}>
+      <div className="action-panel-header">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {description ? (
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div className="action-panel-body">{children}</div>
+    </div>
+  );
+}
+
+export function FlowNotice({
+  tone = "info",
+  icon: Icon,
+  title,
+  children,
+  action,
+}: {
+  tone?: "info" | "success" | "warning" | "danger";
+  icon?: LucideIcon;
+  title?: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "flow-notice",
+        tone === "success" && "flow-notice-success",
+        tone === "warning" && "flow-notice-warning",
+        tone === "info" && "flow-notice-info",
+        tone === "danger" && "flow-notice-danger",
+      )}
+    >
+      {Icon ? (
+        <span className="flow-notice-icon">
+          <Icon className="h-4 w-4" />
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        {title ? <p className="font-medium">{title}</p> : null}
+        <div className={cn(title && "mt-1", "text-sm opacity-90")}>{children}</div>
+        {action ? <div className="mt-3">{action}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+export function PanelLoading({ label = "Loading…" }: { label?: string }) {
+  return (
+    <div className="panel-loading">
+      <Loader2 className="h-4 w-4 animate-spin text-maroon" />
+      {label}
+    </div>
+  );
+}
+
+export function FormSelect({
+  className,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select className={cn("form-select", className)} {...props}>
+      {children}
+    </select>
+  );
+}
+
+export function PortalGateCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="portal-gate-card">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-maroon">NMP TARF</p>
+        <h1 className="mt-2 text-xl font-semibold text-foreground">{title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        {children ? <div className="mt-5 flex flex-wrap justify-center gap-2">{children}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+export function PageLoader({ label = "Loading…" }: { label?: string }) {
+  return (
+    <div className="page-loader">
+      <Loader2 className="h-4 w-4 animate-spin text-maroon" />
+      {label}
     </div>
   );
 }
@@ -65,9 +177,9 @@ export function BackLink({ to, label = "Back" }: { to: string; label?: string })
   return (
     <Link
       to={to}
-      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:border-maroon/25 hover:bg-maroon/5 hover:text-foreground"
     >
-      <ArrowLeft className="h-4 w-4" />
+      <ArrowLeft className="h-3.5 w-3.5" />
       {label}
     </Link>
   );
@@ -211,19 +323,26 @@ export function StatCard({
 
 export function DataPanel({
   title,
+  description,
   action,
   children,
   className,
 }: {
   title: string;
+  description?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("data-panel overflow-hidden", className)}>
-      <div className="flex items-center justify-between border-b border-border/80 bg-muted/30 px-4 py-3 sm:px-5">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <div className="flex items-start justify-between gap-3 border-b border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          {description ? (
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
         {action}
       </div>
       {children}
@@ -330,8 +449,12 @@ export function ActionLink({
 export function LoadingRows({ cols = 5 }: { cols?: number }) {
   return (
     <tr>
-      <td colSpan={cols} className="px-4 py-12 text-center text-sm text-muted-foreground">
-        Loading…
+      <td colSpan={cols} className="px-4 py-8 sm:px-5">
+        <div className="mx-auto max-w-md space-y-2">
+          <div className="skeleton-line w-full" />
+          <div className="skeleton-line w-4/5 opacity-80" />
+          <div className="skeleton-line w-3/5 opacity-60" />
+        </div>
       </td>
     </tr>
   );

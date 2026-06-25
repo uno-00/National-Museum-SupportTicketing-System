@@ -4,6 +4,7 @@ import {
   buildPlacementLayoutOverlay,
   buildPlacementOverlay,
 } from "@/components/documents/buildPlacementOverlay";
+import { EmptyState } from "@/components/layout/workspace-ui";
 import { ViewOnlyDocumentViewer } from "@/components/documents/ViewOnlyDocumentViewer";
 import { isImagePath, isPdfPath } from "@/lib/media-url";
 import {
@@ -46,8 +47,7 @@ export function FormTemplateFileViewer({
   const filled = hasFilledAnswers(answers);
 
   /** Layout-label PDF for Records review, or when no answers yet. */
-  const useMergedPdf =
-    hasPlacements && isPdfTemplate && Boolean(loadMergedPdf) && !filled;
+  const useMergedPdf = hasPlacements && isPdfTemplate && Boolean(loadMergedPdf) && !filled;
 
   const blobLoader = useMemo(() => {
     if (!useMergedPdf || !enabled || !loadMergedPdf) return undefined;
@@ -70,7 +70,7 @@ export function FormTemplateFileViewer({
 
   if (!templateSrc) {
     return (
-      <p className="px-4 py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+      <EmptyState title="No template uploaded" description={emptyMessage} />
     );
   }
 

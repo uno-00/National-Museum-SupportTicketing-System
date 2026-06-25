@@ -3,6 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ActionPanel,
+  EmptyState,
+  FlowNotice,
+  FormSelect,
+  PanelLoading,
+  WorkspacePageHeader,
+} from "@/components/layout/workspace-ui";
 import { ClientFieldInput } from "@/components/client/ClientFieldInput";
 import { ClientFormFileViewerDialog } from "@/components/client/ClientFormFileViewerDialog";
 import { Button } from "@/components/ui/button";
@@ -115,38 +123,31 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
   };
 
   if (formsLoading) {
-    return (
-      <div className="form-panel flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading available forms…
-      </div>
-    );
+    return <PanelLoading label="Loading available forms…" />;
   }
 
   const forms = formsData?.items ?? [];
   if (forms.length === 0) {
     return (
-      <div className="form-panel py-12 text-center text-sm text-muted-foreground">
-        No published forms are available yet. Please check back later or contact your administrator.
-      </div>
+      <EmptyState
+        title="No forms available yet"
+        description="Published TA forms will appear here when Records approves them. Please check back later or contact your administrator."
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="page-hero">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Submit Request</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Submitting as{" "}
-          <strong className="text-foreground">{user?.name ?? user?.email ?? "your account"}</strong>
-          . This request will appear in your list only.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="Submit Request"
+        description={`Submitting as ${user?.name ?? user?.email ?? "your account"}. This request will appear in your list only.`}
+        bordered
+      />
 
-      <div className="form-panel space-y-5">
+      <ActionPanel title="Choose a form" description="Select a published TA form, then complete the fields below.">
         <div className="space-y-2">
-          <Label>Select form</Label>
-          <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
+          <Label>Published form</Label>
+          <FormSelect
             value={selectedFormId}
             onChange={(e) => {
               setSelectedFormId(e.target.value);
@@ -159,29 +160,29 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
                 {f.title}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </div>
 
         {selectedFormId && formLoading ? (
-          <p className="text-sm text-muted-foreground">Loading form fields…</p>
+          <PanelLoading label="Loading form fields…" />
         ) : form ? (
           <>
             {form.printTemplateImagePath?.trim() ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 bg-muted/20 px-4 py-3">
-                <p className="text-sm text-muted-foreground">
-                  Review the uploaded TA form before filling in your request.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => setFilePreviewOpen(true)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View form file
-                </Button>
-              </div>
+              <FlowNotice tone="info" title="Review the TA form">
+                Open the uploaded template before filling in your request fields.
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shadow-sm"
+                    onClick={() => setFilePreviewOpen(true)}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    View form file
+                  </Button>
+                </div>
+              </FlowNotice>
             ) : null}
 
             <form
@@ -205,7 +206,9 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
                   field={field}
                   value={answers[field.variable]}
                   onChange={(v) => setField(field.variable, v)}
-                  onFile={field.type === "file" ? (file) => handleFieldFileUpload(field, file) : undefined}
+                  onFile={
+                    field.type === "file" ? (file) => handleFieldFileUpload(field, file) : undefined
+                  }
                   uploading={uploading}
                 />
               ))}
@@ -228,7 +231,7 @@ export function ClientSubmitForm({ initialFormId }: ClientSubmitFormProps) {
             />
           </>
         ) : null}
-      </div>
+      </ActionPanel>
     </div>
   );
 }

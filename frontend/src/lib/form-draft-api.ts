@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import type { FormDraft, PrintFieldPlacement } from "@/lib/form-builder-store";
+import { normalizeFormFields } from "@/lib/form-field-normalize";
 import { dataUrlToFile } from "@/lib/upload-data-url";
 
 function buildPlacementBlock(placements: PrintFieldPlacement[], fontSize: number) {
@@ -21,7 +22,7 @@ export function draftToApiBody(draft: FormDraft) {
     refNumber: draft.refNumber,
     effectivity: draft.effectivity,
     version: draft.version,
-    fields: draft.fields,
+    fields: normalizeFormFields(draft.fields),
     signatories: draft.signatories,
     printTemplate,
     printPlacements: placements,

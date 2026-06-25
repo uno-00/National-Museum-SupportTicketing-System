@@ -34,10 +34,10 @@ export function WizardField({
 
 export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+    <div className="border-b border-border/70 pb-5">
+      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
       {subtitle ? (
-        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       ) : null}
     </div>
   );

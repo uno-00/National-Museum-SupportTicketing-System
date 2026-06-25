@@ -1,0 +1,73 @@
+export const PLACEMENT_CHECKMARK = "✓";
+
+function normalizeOption(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function isChoiceFieldType(type: string): boolean {
+  return type === "checkbox" || type === "radio";
+}
+
+export function resolvePlacementOption(
+  field: { type: string; label: string; options?: string[] },
+  placementLabel: string,
+): string | null {
+  if (!isChoiceFieldType(field.type)) return null;
+
+  const options = field.options ?? [];
+  if (options.length === 0) return null;
+
+  const label = placementLabel.trim();
+  if (!label) return null;
+
+  const exact = options.find((option) => option === label);
+  if (exact) return exact;
+
+  const caseInsensitive = options.find(
+    (option) => normalizeOption(option) === normalizeOption(label),
+  );
+  if (caseInsensitive) return caseInsensitive;
+
+  if (normalizeOption(label) === normalizeOption(field.label)) return null;
+
+  return null;
+}
+
+export function isChoiceOptionSelected(value: unknown, option: string): boolean {
+  const target = normalizeOption(option);
+  const isOthersOption = /^others?$/.test(target);
+
+  if (Array.isArray(value)) {
+    return value.some((item) => {
+      const text = String(item);
+      if (normalizeOption(text) === target) return true;
+      if (isOthersOption && (/^others?\s*:/i.test(text) || /^others?$/i.test(text))) return true;
+      return false;
+    });
+  }
+
+  if (value === true || value === "true") return target === "yes";
+  if (value === false || value === "false") return false;
+
+  return normalizeOption(String(value)) === target;
+}
+
+export function displayValueForChoicePlacement(
+  field: { type: string; label: string; options?: string[] },
+  placementLabel: string,
+  value: unknown,
+  showMarkerWhenEmpty = false,
+): string | null {
+  if (!isChoiceFieldType(field.type)) return null;
+
+  const option = resolvePlacementOption(field, placementLabel);
+  if (!option) return "";
+
+  if (isChoiceOptionSelected(value, option)) return PLACEMENT_CHECKMARK;
+  if (showMarkerWhenEmpty) return PLACEMENT_CHECKMARK;
+  return "";
+}
+
+export function isPlacementCheckmark(text: string): boolean {
+  return text === PLACEMENT_CHECKMARK;
+}

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { LiveFormField } from "@/lib/api/types";
+import { normalizeChoiceOptionsForField } from "@/lib/form-field-normalize";
 import { cn } from "@/lib/utils";
 
 type ClientFieldInputProps = {
@@ -56,7 +57,7 @@ export function ClientFieldInput({
             required={field.required}
           >
             <option value="">Select…</option>
-            {(field.options ?? []).map((option) => (
+            {normalizeChoiceOptionsForField(field).map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -73,7 +74,7 @@ export function ClientFieldInput({
             {field.required ? <span className="text-destructive"> *</span> : null}
           </legend>
           <div className="space-y-2">
-            {(field.options ?? []).map((option) => (
+            {normalizeChoiceOptionsForField(field).map((option) => (
               <label key={option} className="flex items-center gap-2 text-sm">
                 <input
                   type="radio"
@@ -90,8 +91,15 @@ export function ClientFieldInput({
       );
 
     case "checkbox": {
-      const options = field.options ?? [];
-      const selected = Array.isArray(value) ? value : [];
+      const options = normalizeChoiceOptionsForField(field);
+      const selected = Array.isArray(value) ? value.map(String) : [];
+      const isOthersOption = (option: string) => /^others?$/i.test(option.trim());
+      const othersEntry = selected.find((item) => /^others?\s*:/i.test(item));
+      const othersText = othersEntry?.replace(/^others?\s*:\s*/i, "") ?? "";
+      const isOptionChecked = (option: string) =>
+        selected.includes(option) ||
+        (isOthersOption(option) &&
+          selected.some((item) => isOthersOption(item) || /^others?\s*:/i.test(item)));
 
       if (options.length === 0) {
         return (
@@ -113,23 +121,44 @@ export function ClientFieldInput({
             {field.label}
             {field.required ? <span className="text-destructive"> *</span> : null}
           </legend>
-          <div className="space-y-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {options.map((option) => {
-              const checked = selected.includes(option);
+              const checked = isOptionChecked(option);
+              const showOthersInput = isOthersOption(option) && checked;
               return (
-                <label key={option} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => {
-                      const next = e.target.checked
-                        ? [...selected, option]
-                        : selected.filter((item) => item !== option);
-                      onChange(next);
-                    }}
-                  />
-                  {option}
-                </label>
+                <div key={option} className={showOthersInput ? "sm:col-span-2" : undefined}>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        let next = selected.filter(
+                          (item) => item !== option && !/^others?\s*:/i.test(item),
+                        );
+                        if (e.target.checked) {
+                          next = [...next, option];
+                        }
+                        onChange(next);
+                      }}
+                    />
+                    {option}
+                  </label>
+                  {showOthersInput ? (
+                    <Input
+                      className="mt-2"
+                      value={othersText}
+                      placeholder="Please specify"
+                      onChange={(e) => {
+                        const detail = e.target.value;
+                        let next = selected.filter(
+                          (item) => item !== option && !/^others?\s*:/i.test(item),
+                        );
+                        next = [...next, detail.trim() ? `Others: ${detail.trim()}` : option];
+                        onChange(next);
+                      }}
+                    />
+                  ) : null}
+                </div>
               );
             })}
           </div>

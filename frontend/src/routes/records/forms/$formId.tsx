@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+  ActionPanel,
   BackLink,
   DataPanel,
+  EmptyState,
+  FlowNotice,
   FormStatusBadge,
+  PageLoader,
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
 import { FormFieldsSummary } from "@/components/records/FormFieldsSummary";
@@ -63,16 +66,19 @@ function FormReviewPage() {
   }, [review.isSuccess, navigate]);
 
   if (isLoading) {
-    return (
-      <p className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading form review…
-      </p>
-    );
+    return <PageLoader label="Loading form review…" />;
   }
 
   if (!form) {
-    return <p className="py-12 text-center text-muted-foreground">Form not found.</p>;
+    return (
+      <EmptyState
+        title="Form not found"
+        description="This form may have been removed or you may not have access."
+        action={
+          <BackLink to={RECORDS_PENDING} label="Back to pending forms" />
+        }
+      />
+    );
   }
 
   return (
@@ -87,7 +93,7 @@ function FormReviewPage() {
       />
 
       {!canReview ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <FlowNotice tone="warning" title="Review already completed">
           {form.status === "published" ? (
             <>
               This form was already approved and published.{" "}
@@ -100,34 +106,28 @@ function FormReviewPage() {
           ) : (
             <>This form is not awaiting review.</>
           )}{" "}
-          <button type="button" onClick={() => void refetch()} className="ml-1 underline">
+          <button type="button" onClick={() => void refetch()} className="ml-1 font-medium underline">
             Refresh
           </button>
-        </div>
+        </FlowNotice>
       ) : null}
 
-      <DataPanel title="Uploaded file">
-        <p className="border-b border-border/80 px-4 py-3 text-sm text-muted-foreground sm:px-5">
-          Form template uploaded by Admin. Zoom and scroll to review. View only.
-        </p>
+      <DataPanel
+        title="Form template"
+        description="Uploaded by Admin. Zoom and scroll to review. View only."
+      >
         <FormUploadedFileViewer form={form} />
       </DataPanel>
 
       <FormFieldsSummary form={form} />
 
       {canReview ? (
-        <div className="form-panel">
-          <div className="flex items-start gap-2">
-            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <p className="text-sm text-muted-foreground">
-              After reviewing the uploaded file above, choose Approve & publish or Disapprove with
-              remarks.
-            </p>
-          </div>
-
-          <h2 className="mt-4 font-medium">Recommendation</h2>
-          <div className="mt-3 flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm">
+        <ActionPanel
+          title="Recommendation"
+          description="After reviewing the uploaded file above, choose Approve & publish or Disapprove with remarks."
+        >
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 rounded-lg border border-border/80 bg-background px-3 py-2 text-sm">
               <input
                 type="radio"
                 name="decision"
@@ -136,7 +136,7 @@ function FormReviewPage() {
               />
               Approve & publish
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 rounded-lg border border-border/80 bg-background px-3 py-2 text-sm">
               <input
                 type="radio"
                 name="decision"
@@ -148,14 +148,12 @@ function FormReviewPage() {
           </div>
           {decision === "disapproved" ? (
             <Input
-              className="mt-3"
               placeholder="Remarks (e.g. Please add required fields)"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
             />
           ) : null}
           <Button
-            className="mt-4"
             disabled={
               review.isPending ||
               review.isSuccess ||
@@ -173,14 +171,14 @@ function FormReviewPage() {
                 : "Submit recommendation"}
           </Button>
           {review.isSuccess ? (
-            <p className="mt-3 text-sm text-green-700">
-              Done.{" "}
-              <Link to={RECORDS_PENDING} className="underline">
+            <FlowNotice tone="success" title="Recommendation submitted">
+              Redirecting to pending list…{" "}
+              <Link to={RECORDS_PENDING} className="font-medium underline">
                 Back to pending list
               </Link>
-            </p>
+            </FlowNotice>
           ) : null}
-        </div>
+        </ActionPanel>
       ) : null}
     </div>
   );

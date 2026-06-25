@@ -1,5 +1,6 @@
+import { EmptyState, PanelLoading } from "@/components/layout/workspace-ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isImagePath, isPdfPath, resolveMediaUrl } from "@/lib/media-url";
 import { getPdfDisplayHeight } from "@/lib/pdf-template";
@@ -73,13 +74,15 @@ function ZoomToolbar({
   onReset: () => void;
 }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-muted/30 px-4 py-2.5 sm:px-5">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-muted/25 px-4 py-3 sm:px-5">
       {fileLabel ? (
-        <p className="min-w-0 truncate text-xs font-medium text-foreground sm:text-sm">{fileLabel}</p>
+        <p className="min-w-0 truncate text-xs font-semibold text-foreground sm:text-sm">
+          {fileLabel}
+        </p>
       ) : (
         <span />
       )}
-      <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-background p-1">
+      <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-background p-1 shadow-sm">
         <Button
           type="button"
           variant="ghost"
@@ -148,12 +151,7 @@ function DocumentViewport({
 }
 
 function LoadingState() {
-  return (
-    <p className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      Loading document…
-    </p>
-  );
+  return <PanelLoading label="Loading document…" />;
 }
 
 function ImageDocument({
@@ -180,9 +178,10 @@ function ImageDocument({
 
   if (failed) {
     return (
-      <p className="px-4 py-12 text-center text-sm text-destructive">
-        Could not load document image.
-      </p>
+      <EmptyState
+        title="Could not load image"
+        description="The document image failed to load. Try refreshing the page."
+      />
     );
   }
 
@@ -201,7 +200,9 @@ function ImageDocument({
             draggable={false}
             onError={() => setFailed(true)}
           />
-          {overlay ? <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div> : null}
+          {overlay ? (
+            <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div>
+          ) : null}
         </div>
       </div>
     </DocumentViewport>
@@ -308,7 +309,14 @@ function PdfEmbedDocument({
   }, [pdfBlob, displayWidth]);
 
   if (loading) return <LoadingState />;
-  if (error) return <p className="px-4 py-12 text-center text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <EmptyState
+        title="Could not load document"
+        description={error}
+      />
+    );
+  }
   if (!blobUrl) return null;
 
   return (
@@ -325,7 +333,9 @@ function PdfEmbedDocument({
             className={cn("block w-full border-0 bg-white", overlay && "pointer-events-none")}
             style={{ height: frameHeight, minHeight: frameHeight }}
           />
-          {overlay ? <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div> : null}
+          {overlay ? (
+            <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div>
+          ) : null}
         </div>
       </div>
     </DocumentViewport>
@@ -358,7 +368,7 @@ export function ViewOnlyDocumentViewer({
   if (!enabled) return null;
 
   if (!blobLoader && !resolvedSrc) {
-    return <p className="px-4 py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>;
+    return <EmptyState title="No document" description={emptyMessage} />;
   }
 
   const toolbar = (
@@ -411,5 +421,5 @@ export function ViewOnlyDocumentViewer({
     );
   }
 
-  return <p className="px-4 py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>;
+  return <EmptyState title="Unsupported document" description={emptyMessage} />;
 }

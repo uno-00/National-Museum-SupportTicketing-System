@@ -83,8 +83,7 @@ export const api = {
   // Published forms (Client)
   publishedForms: () => apiFetch<{ items: FormRecord[] }>("/api/forms/published"),
   getPublishedForm: (id: string) => apiFetch<{ form: FormRecord }>(`/api/forms/published/${id}`),
-  getPublishedFormDocument: (id: string) =>
-    apiFetchBlob(`/api/forms/published/${id}/document.pdf`),
+  getPublishedFormDocument: (id: string) => apiFetchBlob(`/api/forms/published/${id}/document.pdf`),
 
   // Records — form review
   recordsDashboard: () =>
@@ -167,7 +166,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ satisfied }),
     }),
-  submitFeedback: (id: string, body: { rating: number; comment?: string }) =>
+  submitFeedback: (id: string, body: { rating?: number; comment?: string }) =>
     apiFetch<{ ticket: TicketRecord }>(`/api/tickets/${id}/feedback`, {
       method: "POST",
       body: JSON.stringify(body),

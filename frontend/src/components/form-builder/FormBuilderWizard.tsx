@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { WorkspacePageHeader } from "@/components/layout/workspace-ui";
+import { WorkspacePageHeader, PageLoader, FlowNotice } from "@/components/layout/workspace-ui";
 import { Progress } from "@/components/ui/progress";
 import { api, ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -61,7 +61,7 @@ export function FormBuilderWizard() {
   );
 
   if (isAuthLoading && !user) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoader label="Loading form builder…" />;
   }
 
   if (user && !isAdminRole(user.role)) {
@@ -198,24 +198,26 @@ export function FormBuilderWizard() {
       </div>
 
       {saveError ? (
-        <div
-          className="mt-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-          role="alert"
+        <FlowNotice
+          tone="danger"
+          title="Could not save form"
+          action={
+            saveError.includes("admin@nmp.gov.ph") ? (
+              <button
+                type="button"
+                className="text-xs font-medium underline"
+                onClick={() => {
+                  logout();
+                  void navigate({ to: LOGIN, replace: true });
+                }}
+              >
+                Sign out and switch account
+              </button>
+            ) : undefined
+          }
         >
-          <p>{saveError}</p>
-          {saveError.includes("admin@nmp.gov.ph") ? (
-            <button
-              type="button"
-              className="mt-2 text-xs font-medium underline"
-              onClick={() => {
-                logout();
-                void navigate({ to: LOGIN, replace: true });
-              }}
-            >
-              Sign out and switch account
-            </button>
-          ) : null}
-        </div>
+          {saveError}
+        </FlowNotice>
       ) : null}
 
       <div className="mt-8 flex flex-col gap-4 border-t border-border/60 pt-7 sm:flex-row sm:items-center sm:justify-between">

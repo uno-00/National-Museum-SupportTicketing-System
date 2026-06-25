@@ -13,7 +13,10 @@ export function FormFieldsSummary({ form }: FormFieldsSummaryProps) {
     <DataPanel title={`Form fields (${form.fields.length})`}>
       <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
         {form.fields.map((field: LiveFormField) => (
-          <div key={field.id} className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5">
+          <div
+            key={field.id}
+            className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5"
+          >
             <p className="text-sm font-medium">
               {field.label}
               {field.required ? <span className="text-destructive"> *</span> : null}

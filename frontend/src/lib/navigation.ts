@@ -32,6 +32,7 @@ export const RECORDS_ACTIVITY = "/records/activity";
 export const CLIENT_DASHBOARD = "/client/dashboard";
 export const CLIENT_SUBMIT = "/client/submit";
 export const CLIENT_REQUESTS = "/client/requests";
+export const CLIENT_FEEDBACK = "/client/feedback";
 
 export function isAdminRole(role: string | undefined) {
   return role === "admin";

@@ -10,6 +10,7 @@ import {
   DataPanel,
   EmptyState,
   ListRow,
+  PanelLoading,
   StatCard,
   StatusBadge,
 } from "@/components/layout/workspace-ui";
@@ -168,7 +169,7 @@ function AdminDashboardPage() {
         }
       >
         {ticketsLoading ? (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">Loading requests…</p>
+          <PanelLoading label="Loading requests…" />
         ) : pendingTickets.length === 0 ? (
           <EmptyState
             title="No pending approvals"

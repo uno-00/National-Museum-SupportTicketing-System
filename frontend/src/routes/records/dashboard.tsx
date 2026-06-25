@@ -12,6 +12,7 @@ import {
   EmptyState,
   FormStatusBadge,
   ListRow,
+  PanelLoading,
   StatCard,
 } from "@/components/layout/workspace-ui";
 import { FormPdfViewerDialog } from "@/components/records/FormPdfViewerDialog";
@@ -117,7 +118,7 @@ function RecordsDashboardPage() {
         }
       >
         {isLoading ? (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">Loading forms…</p>
+          <PanelLoading label="Loading forms…" />
         ) : pending.length === 0 ? (
           <EmptyState
             title="No forms awaiting review"

@@ -126,7 +126,7 @@ ticketsRouter.post("/:id/assign", requireRoles("admin"), async (req, res, next) 
   }
 });
 
-ticketsRouter.post("/:id/complete", requireRoles("admin"), async (req, res, next) => {
+ticketsRouter.post("/:id/complete", requireRoles("user"), async (req, res, next) => {
   try {
     const ticket = await ticketService.completeTicketService(req.user!, paramId(req));
     res.json({ ticket });
@@ -159,7 +159,12 @@ ticketsRouter.post("/:id/confirm", requireRoles("user"), async (req, res, next) 
 
 ticketsRouter.post("/:id/feedback", requireRoles("user"), async (req, res, next) => {
   try {
-    const body = z.object({ rating: z.number().min(1).max(5), comment: z.string().optional() }).parse(req.body);
+    const body = z
+      .object({
+        rating: z.number().min(1).max(5).optional(),
+        comment: z.string().optional(),
+      })
+      .parse(req.body);
     const ticket = await ticketService.submitFeedback(req.user!, paramId(req), body);
     res.json({ ticket });
   } catch (e) {

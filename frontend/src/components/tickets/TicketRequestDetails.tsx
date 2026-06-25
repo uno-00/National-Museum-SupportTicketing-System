@@ -1,24 +1,31 @@
 import type { TicketRecord } from "@/lib/api/types";
 import { DataPanel } from "@/components/layout/workspace-ui";
 import { TicketSubmittedFileViewer } from "@/components/tickets/TicketSubmittedFileViewer";
+import { TicketFeedbackSection } from "@/components/tickets/TicketFeedbackSection";
 import { getTicketAnswerRows } from "@/lib/ticket-details";
 import { cn, formatAssignedPersonnel } from "@/lib/utils";
 
 type TicketRequestDetailsProps = {
   ticket: TicketRecord;
   className?: string;
+  /** Show client feedback block (admin views). */
+  showFeedback?: boolean;
 };
 
-export function TicketRequestDetails({ ticket, className }: TicketRequestDetailsProps) {
+export function TicketRequestDetails({
+  ticket,
+  className,
+  showFeedback = true,
+}: TicketRequestDetailsProps) {
   const answerRows = getTicketAnswerRows(ticket);
   const fileLabel = ticket.attachmentName?.trim() || ticket.formTitle;
 
   return (
     <div className={cn("space-y-4", className)}>
-      <DataPanel title="Uploaded file">
-        <p className="border-b border-border/80 px-4 py-3 text-sm text-muted-foreground sm:px-5">
-          Form with submitted answers placed on the template. Zoom and scroll to review. View only.
-        </p>
+      <DataPanel
+        title="Uploaded file"
+        description="Form with submitted answers placed on the template. Zoom and scroll to review."
+      >
         <TicketSubmittedFileViewer ticket={ticket} fileLabel={fileLabel} />
       </DataPanel>
 
@@ -26,7 +33,10 @@ export function TicketRequestDetails({ ticket, className }: TicketRequestDetails
         <DataPanel title="Submitted answers">
           <dl className="divide-y divide-border/70">
             {answerRows.map((row) => (
-              <div key={row.label} className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,220px)_1fr] sm:px-5">
+              <div
+                key={row.label}
+                className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,220px)_1fr] sm:px-5"
+              >
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {row.label}
                 </dt>
@@ -37,12 +47,14 @@ export function TicketRequestDetails({ ticket, className }: TicketRequestDetails
         </DataPanel>
       ) : null}
 
+      {showFeedback ? <TicketFeedbackSection ticket={ticket} /> : null}
+
       <div className="form-panel">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Request details
         </h2>
 
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+        <dl className="detail-grid mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Form</dt>
             <dd className="mt-1 text-sm font-medium">{ticket.formTitle}</dd>

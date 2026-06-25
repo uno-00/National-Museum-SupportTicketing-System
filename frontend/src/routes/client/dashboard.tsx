@@ -10,10 +10,13 @@ import {
   DataPanel,
   EmptyState,
   ListRow,
+  PanelLoading,
   StatCard,
   StatusBadge,
 } from "@/components/layout/workspace-ui";
-import { CLIENT_REQUESTS, CLIENT_SUBMIT } from "@/lib/navigation";
+import { CLIENT_FEEDBACK, CLIENT_REQUESTS, CLIENT_SUBMIT } from "@/lib/navigation";
+import { countTicketsNeedingFeedback, ticketCanMarkComplete, ticketNeedsFeedback, ticketReadyToClose } from "@/lib/ticket-workflow";
+import { getClientFeedbackUrl } from "@/lib/feedback-config";
 import { cn, formatAssignedPersonnel } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -40,8 +43,15 @@ function ClientDashboardPage() {
   const items = tickets?.items ?? [];
   const active = items.filter((t) => !["closed", "rejected"].includes(t.status)).length;
   const pending = items.filter((t) => t.status === "pending_approval").length;
-  const completed = items.filter((t) => ["closed", "resolved"].includes(t.status)).length;
-  const needsAction = items.filter((t) => ["resolved", "rejected"].includes(t.status)).length;
+  const completed = items.filter((t) => t.status === "closed").length;
+  const needsFeedback = countTicketsNeedingFeedback(items);
+  const canMarkComplete = items.filter(ticketCanMarkComplete).length;
+  const feedbackTickets = items.filter(ticketNeedsFeedback);
+  const firstFeedbackTicket = feedbackTickets[0];
+  const feedbackUrl = firstFeedbackTicket ? getClientFeedbackUrl(firstFeedbackTicket) : null;
+  const needsClose = items.filter(ticketReadyToClose).length;
+  const needsAction =
+    needsFeedback + needsClose + canMarkComplete + items.filter((t) => t.status === "rejected").length;
   const recent = [...items]
     .sort(
       (a, b) =>
@@ -65,14 +75,55 @@ function ClientDashboardPage() {
         }
       />
 
-      {needsAction > 0 ? (
-        <DashboardAlert tone="warning" title="Action needed on your requests">
-          Some requests need confirmation or follow-up. Open My Requests to review the latest
-          status.
-          <div className="mt-3">
-            <ActionLink to={CLIENT_REQUESTS} variant="outline">
-              Go to My Requests
+      {needsFeedback > 0 ? (
+        <DashboardAlert tone="warning" title="Service complete — submit feedback">
+          {needsFeedback} request{needsFeedback === 1 ? "" : "s"} need your feedback after you marked
+          the service complete.
+          {feedbackUrl ? (
+            <a
+              href={feedbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block break-all text-sm font-medium text-maroon hover:underline"
+            >
+              {feedbackUrl}
+            </a>
+          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {firstFeedbackTicket ? (
+              <Link
+                to="/client/requests/$ticketId"
+                params={{ ticketId: firstFeedbackTicket._id }}
+                className={cn(buttonVariants({ size: "sm" }), "shadow-sm")}
+              >
+                Open request & submit feedback
+              </Link>
+            ) : null}
+            <ActionLink to={CLIENT_FEEDBACK} variant="outline">
+              All feedback requests
             </ActionLink>
+          </div>
+        </DashboardAlert>
+      ) : canMarkComplete > 0 ? (
+        <DashboardAlert tone="info" title="Mark service complete">
+          {canMarkComplete} request{canMarkComplete === 1 ? "" : "s"} may be ready to mark complete.
+          Open the request when ICT work is finished, then submit feedback and close the ticket.
+          <div className="mt-3">
+            <ActionLink to={CLIENT_REQUESTS}>Open my requests</ActionLink>
+          </div>
+        </DashboardAlert>
+      ) : needsAction > 0 ? (
+        <DashboardAlert tone="warning" title="Action needed on your requests">
+          Some requests need follow-up. Open My Requests or Service Feedback to continue.
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ActionLink to={CLIENT_REQUESTS} variant="outline">
+              My Requests
+            </ActionLink>
+            {needsClose > 0 ? (
+              <ActionLink to={CLIENT_REQUESTS} variant="outline">
+                Close completed requests
+              </ActionLink>
+            ) : null}
           </div>
         </DashboardAlert>
       ) : items.length === 0 ? (
@@ -111,7 +162,7 @@ function ClientDashboardPage() {
         <StatCard
           label="Completed"
           value={completed}
-          hint="Resolved or closed"
+          hint="Closed requests"
           to={CLIENT_REQUESTS}
           icon={CheckCircle2}
           accent="success"
@@ -145,9 +196,7 @@ function ClientDashboardPage() {
         }
       >
         {isLoading ? (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-            Loading your requests…
-          </p>
+          <PanelLoading label="Loading your requests…" />
         ) : recent.length === 0 ? (
           <EmptyState
             title="No requests yet"
@@ -176,13 +225,23 @@ function ClientDashboardPage() {
                 })}`}
                 trailing={<StatusBadge status={t.status} />}
                 action={
-                  <Link
-                    to="/client/requests/$ticketId"
-                    params={{ ticketId: t._id }}
-                    className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shadow-sm")}
-                  >
-                    View
-                  </Link>
+                  ticketNeedsFeedback(t) ? (
+                    <Link
+                      to="/client/requests/$ticketId"
+                      params={{ ticketId: t._id }}
+                      className={cn(buttonVariants({ size: "sm" }), "shadow-sm")}
+                    >
+                      Submit feedback
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/client/requests/$ticketId"
+                      params={{ ticketId: t._id }}
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shadow-sm")}
+                    >
+                      View
+                    </Link>
+                  )
                 }
               />
             ))}

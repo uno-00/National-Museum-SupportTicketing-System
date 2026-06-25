@@ -3,7 +3,18 @@ import type { AuthUser } from "../middleware/auth.js";
 import type { FormReviewDecision } from "../constants.js";
 import { AppError } from "../utils/errors.js";
 import { generateFormRef } from "../utils/ticketNumber.js";
+import { normalizeFormFields } from "../utils/formFields.js";
 import { logActivity } from "./activityService.js";
+
+function withNormalizedFields<T extends { fields?: unknown }>(form: T): T {
+  if (!form || !Array.isArray(form.fields)) return form;
+  return { ...form, fields: normalizeFormFields(form.fields as never[]) };
+}
+
+function normalizeFormBody(body: Record<string, unknown>) {
+  if (!Array.isArray(body.fields)) return body;
+  return { ...body, fields: normalizeFormFields(body.fields as never[]) };
+}
 
 async function requireForm(id: string) {
   const doc = await Form.findById(id);
@@ -13,7 +24,7 @@ async function requireForm(id: string) {
 
 export async function createForm(user: AuthUser, body: Record<string, unknown>) {
   const form = await Form.create({
-    ...body,
+    ...normalizeFormBody(body),
     refNumber: body.refNumber ?? generateFormRef(),
     status: "draft",
     createdBy: user.id,
@@ -33,7 +44,7 @@ export async function updateForm(user: AuthUser, formId: string, body: Record<st
   if (!["draft", "disapproved"].includes(form.status)) {
     throw new AppError(400, "Only draft or disapproved forms can be edited");
   }
-  Object.assign(form, body, { updatedBy: user.id });
+  Object.assign(form, normalizeFormBody(body), { updatedBy: user.id });
   await form.save();
   return form;
 }
@@ -45,7 +56,7 @@ export async function listMyForms(user: AuthUser) {
 export async function getFormById(id: string) {
   const form = await Form.findById(id).populate("createdBy", "name email division").lean();
   if (!form) throw new AppError(404, "Form not found");
-  return form;
+  return withNormalizedFields(form);
 }
 
 /** Create form and submit to Records in one step (avoids orphan drafts). */
@@ -179,11 +190,12 @@ export async function reviewForm(
 }
 
 export async function listPublishedForms() {
-  return Form.find({ status: "published" }).sort({ updatedAt: -1 }).lean();
+  const items = await Form.find({ status: "published" }).sort({ updatedAt: -1 }).lean();
+  return items.map((form) => withNormalizedFields(form));
 }
 
 export async function getPublishedForm(id: string) {
   const form = await Form.findOne({ _id: id, status: "published" }).lean();
   if (!form) throw new AppError(404, "Published form not found");
-  return form;
+  return withNormalizedFields(form);
 }

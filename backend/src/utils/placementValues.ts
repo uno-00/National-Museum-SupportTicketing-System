@@ -1,7 +1,10 @@
+import { displayValueForChoicePlacement } from "./placementChoiceValues.js";
+
 type FormField = {
   type: string;
   variable: string;
   label: string;
+  options?: string[];
 };
 
 export type ParsedPlacement = {
@@ -17,7 +20,9 @@ type PlacementRef = {
   label: string;
 };
 
-type FormFieldRef = { variable?: string | null; type?: string | null };
+export function placementValueKey(placement: PlacementRef): string {
+  return `${placement.variable}\0${placement.label}`;
+}
 
 export function isImageAnswerValue(value: unknown): value is string {
   if (typeof value !== "string" || !value.trim()) return false;
@@ -101,6 +106,31 @@ function resolveFieldForPlacement(fields: FormField[], placementVariable: string
   );
 }
 
+type FormFieldRef = { variable?: string | null; type?: string | null };
+
+function formatPlacementValue(
+  field: FormField | null,
+  placement: PlacementRef,
+  value: unknown,
+  showMarkerWhenEmpty = false,
+): string {
+  if (field) {
+    const choiceDisplay = displayValueForChoicePlacement(
+      field,
+      placement.label,
+      value,
+      showMarkerWhenEmpty,
+    );
+    if (choiceDisplay !== null) return choiceDisplay;
+  }
+
+  return field
+    ? formatSubmissionValue(field, value)
+    : value !== undefined && value !== null && value !== ""
+      ? String(value)
+      : "";
+}
+
 export function buildSubmissionValues(
   fields: FormField[],
   answers: Record<string, unknown>,
@@ -111,11 +141,7 @@ export function buildSubmissionValues(
   for (const placement of placements) {
     const field = resolveFieldForPlacement(fields, placement.variable);
     const raw = resolveAnswerForVariable(answers, placement.variable);
-    map[placement.variable] = field
-      ? formatSubmissionValue(field, raw)
-      : raw !== undefined && raw !== null && raw !== ""
-        ? String(raw)
-        : "";
+    map[placementValueKey(placement)] = formatPlacementValue(field, placement, raw);
   }
 
   return map;

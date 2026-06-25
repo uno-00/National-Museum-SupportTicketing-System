@@ -10,6 +10,7 @@ import {
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
 import { CLIENT_DASHBOARD, CLIENT_SUBMIT } from "@/lib/navigation";
+import { ticketNeedsFeedback, ticketReadyToClose, ticketCanMarkComplete } from "@/lib/ticket-workflow";
 import { cn, formatAssignedPersonnel } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -85,16 +86,42 @@ function MyRequestsPage() {
                       })}
                     </td>
                     <td className="px-4 py-3.5 sm:px-5">
-                      <Link
-                        to="/client/requests/$ticketId"
-                        params={{ ticketId: t._id }}
-                        className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" }),
-                          "shadow-sm",
-                        )}
-                      >
-                        View details
-                      </Link>
+                      {ticketCanMarkComplete(t) ? (
+                        <Link
+                          to="/client/requests/$ticketId"
+                          params={{ ticketId: t._id }}
+                          className="text-sm font-medium text-maroon hover:underline"
+                        >
+                          Mark complete →
+                        </Link>
+                      ) : ticketNeedsFeedback(t) ? (
+                        <Link
+                          to="/client/requests/$ticketId"
+                          params={{ ticketId: t._id }}
+                          className="text-sm font-medium text-maroon hover:underline"
+                        >
+                          Submit feedback →
+                        </Link>
+                      ) : ticketReadyToClose(t) ? (
+                        <Link
+                          to="/client/requests/$ticketId"
+                          params={{ ticketId: t._id }}
+                          className="text-sm font-medium text-maroon hover:underline"
+                        >
+                          Close request →
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/client/requests/$ticketId"
+                          params={{ ticketId: t._id }}
+                          className={cn(
+                            buttonVariants({ variant: "outline", size: "sm" }),
+                            "shadow-sm",
+                          )}
+                        >
+                          View details
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))

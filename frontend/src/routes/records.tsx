@@ -2,6 +2,8 @@ import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Clock, History, LayoutDashboard } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { PortalGateCard } from "@/components/layout/workspace-ui";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
 import { ensurePortalRole } from "@/lib/portal-guard";
 import { recordsPendingNotifications } from "@/lib/notifications";
@@ -49,25 +51,22 @@ function RecordsLayout() {
 
   if (sessionReady && user && !isRecordsRole(user.role)) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-lg font-medium">Wrong account for Records</p>
-        <p className="max-w-md text-sm text-muted-foreground">
-          No Records session found. Sign in at <strong>{LOGIN}</strong> with{" "}
-          <strong>records@nmp.gov.ph</strong>.
-        </p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
-          >
-            Sign out
-          </button>
-          <Link to={LOGIN} className="rounded-md border px-4 py-2 text-sm">
-            Go to login
-          </Link>
-        </div>
-      </div>
+      <PortalGateCard
+        title="Wrong account for Records"
+        description={
+          <>
+            No Records session found. Sign in at <strong>{LOGIN}</strong> with{" "}
+            <strong>records@nmp.gov.ph</strong>.
+          </>
+        }
+      >
+        <Button type="button" onClick={() => logout()}>
+          Sign out
+        </Button>
+        <Link to={LOGIN}>
+          <Button variant="outline">Go to login</Button>
+        </Link>
+      </PortalGateCard>
     );
   }
 

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { PanelLoading } from "@/components/layout/workspace-ui";
 import type { NotificationItem } from "@/lib/notifications";
 import { formatNotificationTime } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
@@ -77,7 +78,7 @@ export function NotificationBell({
 
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading…</p>
+              <PanelLoading label="Loading notifications…" />
             ) : count === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
             ) : (

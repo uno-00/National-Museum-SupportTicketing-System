@@ -7,12 +7,14 @@ import {
   isSignatureImageValue,
   resolveSignatureImageSrc,
 } from "@/lib/form-field-values";
+import { displayValueForChoicePlacement, PLACEMENT_CHECKMARK } from "@/lib/placement-choice-values";
 import {
   displayValueForPlacement,
   resolveAnswerForVariable,
   resolveFormPlacementFontSize,
   resolveFormPlacements,
 } from "@/lib/placement-values";
+import { cn } from "@/lib/utils";
 
 type BuildPlacementOverlayOptions = {
   /** Show field label at placement when there is no submitted answer (Records layout review). */
@@ -78,11 +80,24 @@ function renderPlacementLayer(
       );
       if (!text) return null;
 
-      const hasAnswer = Boolean(
-        field
-          ? formatFieldAnswerValue(field, raw).trim()
-          : displayValueForPlacement(fields, placement.variable, placement.label, answers, false),
-      );
+      const isCheckmark = text === PLACEMENT_CHECKMARK;
+      const hasAnswer = isCheckmark
+        ? Boolean(
+            field &&
+            displayValueForChoicePlacement(field, placement.label, raw, false) ===
+              PLACEMENT_CHECKMARK,
+          )
+        : Boolean(
+            field
+              ? formatFieldAnswerValue(field, raw).trim()
+              : displayValueForPlacement(
+                  fields,
+                  placement.variable,
+                  placement.label,
+                  answers,
+                  false,
+                ),
+          );
 
       return (
         <span
@@ -92,7 +107,10 @@ function renderPlacementLayer(
           title={placement.label}
         >
           <span
-            className={hasAnswer ? "dynamic-text" : "dynamic-text opacity-80"}
+            className={cn(
+              hasAnswer ? "dynamic-text" : "dynamic-text opacity-80",
+              isCheckmark && "placement-checkmark",
+            )}
             style={{ color: "#111111", textShadow: "0 0 2px rgba(255,255,255,0.85)" }}
           >
             {text}
@@ -128,17 +146,11 @@ export function buildPlacementOverlay(
 export function buildPlacementLayoutOverlay(form: FormRecord): ReactNode {
   const placements = resolveFormPlacements(form);
   if (!placements.length) return null;
-  return renderPlacementLayer(
-    form.fields,
-    placements,
-    {},
-    resolveFormPlacementFontSize(form),
-    { showLabelWhenEmpty: true },
-  );
+  return renderPlacementLayer(form.fields, placements, {}, resolveFormPlacementFontSize(form), {
+    showLabelWhenEmpty: true,
+  });
 }
 
 export function canShowFilledTemplate(form: FormRecord | null | undefined): form is FormRecord {
-  return Boolean(
-    form?.printTemplateImagePath?.trim() && resolveFormPlacements(form).length > 0,
-  );
+  return Boolean(form?.printTemplateImagePath?.trim() && resolveFormPlacements(form).length > 0);
 }

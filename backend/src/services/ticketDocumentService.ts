@@ -89,6 +89,8 @@ export async function generateTicketDocumentPdf(ticketId: string) {
     printTemplateImagePath?: string | null;
     printPlacements?: Placement[];
     printPlacementFontSize?: number;
+    workProcedurePath?: string | null;
+    workProcedureName?: string | null;
   };
 
   const fields = formDoc.fields ?? [];
@@ -122,6 +124,13 @@ export async function generateTicketDocumentPdf(ticketId: string) {
 
   if (pdfDoc.getPageCount() === 0) {
     await appendTextSummaryPage(pdfDoc, ticket, fields, answers);
+  }
+
+  if (formDoc.workProcedurePath && isPdfFile(formDoc.workProcedurePath)) {
+    const procedurePath = resolveUploadPath(formDoc.workProcedurePath);
+    if (fs.existsSync(procedurePath)) {
+      await appendPdfAttachment(pdfDoc, procedurePath);
+    }
   }
 
   if (ticket.attachmentUrl && isPdfFile(ticket.attachmentUrl, ticket.attachmentMimeType)) {

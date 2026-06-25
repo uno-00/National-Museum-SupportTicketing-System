@@ -4,8 +4,10 @@ import { useState } from "react";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
+  ActionPanel,
   DataPanel,
   EmptyState,
+  FlowNotice,
   LoadingRows,
   StatusBadge,
   WorkspacePageHeader,
@@ -95,16 +97,17 @@ function ApprovalsPage() {
       />
 
       {isError ? (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <p>{errorMessage}</p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="mt-2 text-xs font-medium underline"
-          >
-            Try again
-          </button>
-        </div>
+        <FlowNotice
+          tone="danger"
+          title="Could not load approvals"
+          action={
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Try again
+            </Button>
+          }
+        >
+          {errorMessage}
+        </FlowNotice>
       ) : null}
 
       <DataPanel title={`${items.length} pending approval${items.length === 1 ? "" : "s"}`}>
@@ -185,27 +188,23 @@ function ApprovalsPage() {
       </DataPanel>
 
       {rejectId ? (
-        <div className="form-panel">
-          <p className="text-sm font-medium">
-            Reject request
-            {rejectTarget ? (
-              <span className="ml-2 font-mono text-xs text-muted-foreground">
-                {rejectTarget.ticketNumber}
-              </span>
-            ) : null}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {rejectTarget?.formTitle ?? "Provide a clear reason for the client."}
-          </p>
+        <ActionPanel
+          title="Reject request"
+          description={
+            rejectTarget
+              ? `${rejectTarget.formTitle} · ${rejectTarget.ticketNumber}`
+              : "Provide a clear reason for the client."
+          }
+        >
           <Input
-            className="mt-2"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason for rejection"
           />
-          <div className="mt-3 flex gap-2">
+          <div className="flex gap-2">
             <Button
               size="sm"
+              variant="destructive"
               onClick={() => reject.mutate({ id: rejectId, reason })}
               disabled={!reason.trim() || reject.isPending}
             >
@@ -215,7 +214,7 @@ function ApprovalsPage() {
               Cancel
             </Button>
           </div>
-        </div>
+        </ActionPanel>
       ) : null}
 
       <Link to={ADMIN_REQUESTS} className="text-sm text-maroon hover:underline">

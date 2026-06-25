@@ -1,6 +1,7 @@
 import type { FormField, PrintFieldPlacement } from "@/lib/form-builder-store";
 import type { FormRecord } from "@/lib/api/types";
 import { answerValueIsFilled, formatFieldAnswerValue } from "@/lib/form-field-values";
+import { displayValueForChoicePlacement } from "@/lib/placement-choice-values";
 
 const PLACEMENT_BLOCK =
   /\[NMP placements\]\s*fontSize\t(\d+(?:\.\d+)?)\s*([\s\S]*?)\[\/NMP placements\]/i;
@@ -50,9 +51,7 @@ export function resolveFormPlacements(form: FormRecord): PrintFieldPlacement[] {
 
 export function resolveFormPlacementFontSize(form: FormRecord): number {
   return (
-    form.printPlacementFontSize ??
-    parsePlacementsFromTemplate(form.printTemplate).fontSize ??
-    10
+    form.printPlacementFontSize ?? parsePlacementsFromTemplate(form.printTemplate).fontSize ?? 10
   );
 }
 
@@ -123,6 +122,17 @@ export function displayValueForPlacement(
     ) ?? null;
 
   const raw = resolveAnswerForVariable(answers, placementVariable);
+
+  if (field) {
+    const choiceDisplay = displayValueForChoicePlacement(
+      field,
+      placementLabel,
+      raw,
+      showLabelWhenEmpty,
+    );
+    if (choiceDisplay !== null) return choiceDisplay;
+  }
+
   const answered = field
     ? formatAnswerValue(field, raw)
     : raw !== undefined && raw !== null && raw !== ""

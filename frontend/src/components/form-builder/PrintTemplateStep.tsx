@@ -30,6 +30,11 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { buildPrintReadyText, buildSampleSubmissionValues } from "@/lib/print-merge";
+import {
+  isChoiceFieldType,
+  PLACEMENT_CHECKMARK,
+  resolvePlacementOption,
+} from "@/lib/placement-choice-values";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +72,17 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
   );
 
   const variables = useMemo(
-    () => draft.fields.map((f) => ({ variable: f.variable, label: f.label })),
+    () =>
+      draft.fields.flatMap((field) => {
+        if (isChoiceFieldType(field.type) && (field.options?.length ?? 0) > 0) {
+          return (field.options ?? []).map((option) => ({
+            variable: field.variable,
+            label: option,
+            hint: field.label,
+          }));
+        }
+        return [{ variable: field.variable, label: field.label, hint: field.label }];
+      }),
     [draft.fields],
   );
 
@@ -324,7 +339,7 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
               ) : (
                 variables.map((v) => (
                   <div
-                    key={v.variable}
+                    key={`${v.variable}:${v.label}`}
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.setData("application/json", JSON.stringify(v));
@@ -338,6 +353,11 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
                       <div className="mt-0.5 truncate font-mono text-[10px] text-maroon">
                         {v.variable}
                       </div>
+                      {v.hint !== v.label ? (
+                        <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                          {v.hint}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 ))
@@ -526,9 +546,14 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
                         draggable={false}
                       />
                       {placements.map((p) => {
+                        const field = draft.fields.find((item) => item.variable === p.variable);
                         const preview =
-                          sampleValues[p.variable]?.replace(/\s*\(sample\)\s*$/i, "").trim() ||
-                          p.label;
+                          field && isChoiceFieldType(field.type)
+                            ? resolvePlacementOption(field, p.label)
+                              ? PLACEMENT_CHECKMARK
+                              : ""
+                            : sampleValues[p.variable]?.replace(/\s*\(sample\)\s*$/i, "").trim() ||
+                              p.label;
                         return (
                           <button
                             key={p.id}
@@ -556,7 +581,14 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
                               setDraggingId(null);
                             }}
                           >
-                            <span className="dynamic-text">{preview}</span>
+                            <span
+                              className={cn(
+                                "dynamic-text",
+                                preview === PLACEMENT_CHECKMARK && "placement-checkmark",
+                              )}
+                            >
+                              {preview}
+                            </span>
                           </button>
                         );
                       })}
@@ -589,8 +621,9 @@ export function PrintTemplateStep({ draft, update }: PrintTemplateStepProps) {
                 </div>
                 {placements.length === 0 ? (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Drop on the left edge of each line (10px Arial, like the printed form). Hover a
-                    marker for its variable.
+                    Drop on the left edge of each line (10px Arial, like the printed form). For
+                    checkbox/radio fields, drag each option onto its box — a checkmark (✓) appears
+                    when selected, not the option text.
                   </p>
                 ) : (
                   <ul className="mt-2 flex flex-wrap gap-2">

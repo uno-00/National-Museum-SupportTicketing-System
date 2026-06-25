@@ -119,7 +119,7 @@ export async function getTicketById(id: string) {
     .populate("creatorId", "name email division")
     .populate(
       "formId",
-      "title refNumber fields printTemplate printTemplateImagePath printPlacements printPlacementFontSize",
+      "title refNumber fields printTemplate printTemplateImagePath printPlacements printPlacementFontSize workProcedurePath workProcedureName",
     )
     .lean();
   if (!ticket) throw new AppError(404, "Ticket not found");
@@ -252,11 +252,10 @@ export async function listTicketsAssignedToAdmin(userId: string) {
 export async function completeTicketService(actor: AuthUser, id: string) {
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
-
-  const isAssigned = ticket.assignedTo.some((assigneeId) => assigneeId.toString() === actor.id);
-  if (!isAssigned) {
-    throw new AppError(403, "Only assigned personnel can mark this request as complete");
+  if (ticket.creatorId.toString() !== actor.id) {
+    throw new AppError(403, "Only the client can mark this service complete");
   }
+
   if (!["open", "in_progress", "pending", "reopened"].includes(ticket.status)) {
     throw new AppError(400, "This request is not awaiting service completion");
   }
@@ -269,7 +268,7 @@ export async function completeTicketService(actor: AuthUser, id: string) {
     action: "ticket_service_completed",
     entityType: "ticket",
     entityId: ticket._id.toString(),
-    summary: `Service completed for ${ticket.ticketNumber} — awaiting client confirmation`,
+    summary: `Client marked ${ticket.ticketNumber} complete — feedback pending`,
   });
 
   return ticket.populate("assignedTo", "name email division");
@@ -279,9 +278,12 @@ export async function clientConfirmResolution(user: AuthUser, id: string, satisf
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
   if (ticket.creatorId.toString() !== user.id) throw new AppError(403, "Not your request");
-  if (ticket.status !== "resolved") throw new AppError(400, "Ticket is not awaiting confirmation");
+  if (ticket.status !== "resolved") throw new AppError(400, "Ticket is not awaiting client action");
 
   if (satisfied) {
+    if (!ticket.feedbackSubmitted) {
+      throw new AppError(400, "Submit feedback before closing this request");
+    }
     ticket.status = "closed";
     ticket.clientConfirmed = true;
     ticket.closedAt = new Date();
@@ -306,18 +308,23 @@ export async function clientConfirmResolution(user: AuthUser, id: string, satisf
 export async function submitFeedback(
   user: AuthUser,
   id: string,
-  body: { rating: number; comment?: string },
+  body: { rating?: number; comment?: string },
 ) {
   const ticket = await Ticket.findById(id);
   if (!ticket) throw new AppError(404, "Ticket not found");
   if (ticket.creatorId.toString() !== user.id) throw new AppError(403, "Not your request");
-  if (ticket.status !== "closed") {
-    throw new AppError(400, "Close the request before submitting feedback");
+  if (ticket.status !== "resolved") {
+    throw new AppError(400, "Mark the service complete before submitting feedback");
   }
-  if (body.rating < 1 || body.rating > 5) throw new AppError(400, "Rating must be 1–5");
+  if (ticket.feedbackSubmitted) {
+    throw new AppError(400, "Feedback was already submitted for this request");
+  }
+  if (body.rating !== undefined && (body.rating < 1 || body.rating > 5)) {
+    throw new AppError(400, "Rating must be 1–5");
+  }
 
-  ticket.feedbackRating = body.rating;
-  ticket.feedbackComment = body.comment ?? "";
+  ticket.feedbackRating = body.rating ?? null;
+  ticket.feedbackComment = body.comment?.trim() ?? "";
   ticket.feedbackSubmitted = true;
   await ticket.save();
 

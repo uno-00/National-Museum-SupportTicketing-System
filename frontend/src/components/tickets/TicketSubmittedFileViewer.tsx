@@ -53,9 +53,13 @@ export function TicketSubmittedFileViewer({
   const isPdfTemplate = Boolean(templateSrc && isPdfPath(templateSrc));
   const isImageTemplate = Boolean(templateSrc && isImagePath(templateSrc));
   const filled = hasFilledAnswers(ticket.answers);
+  const workProcedurePath = form?.workProcedurePath?.trim() ?? "";
+  const hasWorkProcedure = Boolean(workProcedurePath && isPdfPath(workProcedurePath));
 
   /** PDF iframe overlays are unreliable — burn answers into PDF on the server. */
-  const useMergedPdf = Boolean(isPdfTemplate && templateSrc && hasPlacements && filled);
+  const useMergedPdf = Boolean(
+    templateSrc && hasPlacements && filled && (isPdfTemplate || hasWorkProcedure),
+  );
 
   const blobLoader = useMemo(() => {
     if (!useMergedPdf || !enabled) return undefined;
@@ -72,7 +76,7 @@ export function TicketSubmittedFileViewer({
     );
   }, [form, hasPlacements, isImageTemplate, filled, placements, ticket.answers]);
 
-  const src = useMergedPdf ? null : templateSrc ?? resolveFallbackFile(ticket);
+  const src = useMergedPdf ? null : (templateSrc ?? resolveFallbackFile(ticket));
 
   const alt =
     fileLabel?.trim() ||
@@ -81,13 +85,20 @@ export function TicketSubmittedFileViewer({
     ticket.ticketNumber ||
     "Submitted request";
 
+  const displayLabel =
+    hasWorkProcedure && form?.workProcedureName?.trim()
+      ? `${alt} + ${form.workProcedureName.trim()}`
+      : hasWorkProcedure
+        ? `${alt} + work procedure`
+        : alt;
+
   return (
     <ViewOnlyDocumentViewer
       src={src}
       blobLoader={blobLoader}
       enabled={enabled}
       alt={alt}
-      fileLabel={alt}
+      fileLabel={displayLabel}
       overlay={overlay}
       className={className}
       viewportClassName={viewportClassName}

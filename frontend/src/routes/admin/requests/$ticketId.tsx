@@ -2,19 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BackLink, StatusBadge, WorkspacePageHeader } from "@/components/layout/workspace-ui";
+import { BackLink, ActionPanel, FlowNotice, PageLoader, StatusBadge, WorkspacePageHeader } from "@/components/layout/workspace-ui";
 import { TicketRequestDetails } from "@/components/tickets/TicketRequestDetails";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api/client";
 import type { TicketStatus } from "@/lib/api/types";
-import { useAuth } from "@/lib/auth";
 import { ADMIN_APPROVALS, ADMIN_REQUESTS } from "@/lib/navigation";
 import { useAdminSession } from "@/lib/use-portal-session";
 import { cn } from "@/lib/utils";
 
-/** Admin may set these manually — resolved/closed are handled by personnel complete + client close. */
+/** Admin may set these manually — client marks complete, feedback, and close. */
 const ADMIN_STATUSES: TicketStatus[] = ["in_progress", "pending"];
 
 export const Route = createFileRoute("/admin/requests/$ticketId")({
@@ -31,7 +30,6 @@ function invalidateAdminTicketQueries(qc: ReturnType<typeof useQueryClient>) {
 function TicketDetailPage() {
   const { ticketId } = Route.useParams();
   const qc = useQueryClient();
-  const { user } = useAuth();
   const { canQuery } = useAdminSession();
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
   const [rejectReason, setRejectReason] = useState("");
@@ -84,18 +82,6 @@ function TicketDetailPage() {
     },
   });
 
-  const completeService = useMutation({
-    mutationFn: () => api.completeTicketService(ticketId, "admin"),
-    onSuccess: () => {
-      toast.success("Service marked complete — waiting for client to close the ticket");
-      invalidateAdminTicketQueries(qc);
-      void qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
-    },
-    onError: (err: Error) => {
-      toast.error(err instanceof ApiError ? err.message : "Could not mark service complete.");
-    },
-  });
-
   const updateStatus = useMutation({
     mutationFn: (status: TicketStatus) => api.updateTicketStatus(ticketId, status, "admin"),
     onSuccess: () => {
@@ -125,14 +111,11 @@ function TicketDetailPage() {
   };
 
   if (!canQuery || isLoading || !ticket) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">Loading request…</p>;
+    return <PageLoader label="Loading request…" />;
   }
 
   const isPendingApproval = ticket.status === "pending_approval";
   const backTo = isPendingApproval ? ADMIN_APPROVALS : ADMIN_REQUESTS;
-  const isAssignedToMe = ticket.assignedTo?.some((u) => u._id === user?.id) ?? false;
-  const canCompleteService =
-    isAssignedToMe && ["open", "in_progress", "pending", "reopened"].includes(ticket.status);
   const isAwaitingClient = ticket.status === "resolved";
 
   return (
@@ -159,11 +142,10 @@ function TicketDetailPage() {
 
         <div className="space-y-4">
           {isPendingApproval ? (
-            <div className="form-panel space-y-3">
-              <h2 className="font-medium">Approve or reject</h2>
-              <p className="text-sm text-muted-foreground">
-                Review the request details before approving or rejecting.
-              </p>
+            <ActionPanel
+              title="Approve or reject"
+              description="Review the request details before approving or rejecting."
+            >
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
@@ -173,7 +155,7 @@ function TicketDetailPage() {
                   Approve request
                 </Button>
               </div>
-              <div className="space-y-2 border-t border-border/70 pt-3">
+              <div className="mt-4 space-y-2 border-t border-border/70 pt-4">
                 <Input
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
@@ -188,17 +170,15 @@ function TicketDetailPage() {
                   Reject request
                 </Button>
               </div>
-            </div>
+            </ActionPanel>
           ) : null}
 
           {!isPendingApproval ? (
             <>
-              <div className="form-panel space-y-3">
-                <h2 className="font-medium">Assign personnel</h2>
-                <p className="text-sm text-muted-foreground">
-                  Select ICT personnel. Assigning automatically sets the request to{" "}
-                  <strong>In Progress</strong>.
-                </p>
+              <ActionPanel
+                title="Assign personnel"
+                description="Select ICT personnel. Assigning automatically sets the request to In Progress."
+              >
                 {ticket.assignedTo?.length ? (
                   <p className="text-sm">
                     Currently assigned:{" "}
@@ -259,38 +239,21 @@ function TicketDetailPage() {
                 >
                   Assign
                 </Button>
-              </div>
-
-              {canCompleteService ? (
-                <div className="form-panel space-y-3">
-                  <h2 className="font-medium">Complete service</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Mark the service as done. The client will review and close the ticket.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => completeService.mutate()}
-                    disabled={completeService.isPending}
-                  >
-                    Mark service complete
-                  </Button>
-                </div>
-              ) : null}
+              </ActionPanel>
 
               {isAwaitingClient ? (
-                <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-950">
-                  Service complete. Waiting for the client to confirm and close this request.
-                </div>
+                <FlowNotice tone="success" title="Waiting for client">
+                  Client marked the service complete. Waiting for feedback submission and ticket
+                  closure.
+                </FlowNotice>
               ) : null}
 
               {!isAwaitingClient && ticket.status !== "closed" ? (
-                <div className="form-panel">
-                  <h2 className="font-medium">Update status</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Use <strong>Mark service complete</strong> when work is done. Only the client
-                    can close the ticket.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                <ActionPanel
+                  title="Update status"
+                  description="The client marks the service complete when ICT work is done, then submits feedback and closes the request."
+                >
+                  <div className="flex flex-wrap gap-2">
                     {ADMIN_STATUSES.map((s) => {
                       const isCurrent = ticket.status === s;
                       return (
@@ -306,7 +269,7 @@ function TicketDetailPage() {
                       );
                     })}
                   </div>
-                </div>
+                </ActionPanel>
               ) : null}
             </>
           ) : null}

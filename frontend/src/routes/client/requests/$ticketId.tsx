@@ -1,21 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, MessageSquare, ShieldCheck, UserRound } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CheckCircle2, Loader2, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { ClientFeedbackPanel } from "@/components/client/ClientFeedbackPanel";
 import {
   BackLink,
+  ActionPanel,
   DataPanel,
+  FlowNotice,
+  PageLoader,
   StatusBadge,
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
 import { TicketRequestDetails } from "@/components/tickets/TicketRequestDetails";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
-import { CLIENT_REQUESTS } from "@/lib/navigation";
+import { CLIENT_FEEDBACK, CLIENT_REQUESTS } from "@/lib/navigation";
+import { getClientFeedbackUrl } from "@/lib/feedback-config";
+import {
+  ticketCanMarkComplete,
+  ticketNeedsFeedback,
+  ticketReadyToClose,
+} from "@/lib/ticket-workflow";
 import { formatAssignedPersonnel } from "@/lib/utils";
 
 export const Route = createFileRoute("/client/requests/$ticketId")({
@@ -25,12 +33,20 @@ export const Route = createFileRoute("/client/requests/$ticketId")({
 function TicketTrackPage() {
   const { ticketId } = Route.useParams();
   const qc = useQueryClient();
-  const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-ticket", ticketId],
     queryFn: () => api.getTicket(ticketId),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: (query) => {
+      const status = query.state.data?.ticket?.status;
+      if (status === "in_progress" || status === "open" || status === "pending") {
+        return 10_000;
+      }
+      return false;
+    },
   });
 
   const confirm = useMutation({
@@ -40,26 +56,48 @@ function TicketTrackPage() {
       void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
       void qc.invalidateQueries({ queryKey: ["my-tickets"] });
     },
+    onError: (err: Error) => toast.error(err.message || "Could not update request"),
+  });
+
+  const completeService = useMutation({
+    mutationFn: () => api.completeTicketService(ticketId),
+    onSuccess: (result) => {
+      const feedbackUrl = getClientFeedbackUrl(result.ticket);
+      if (feedbackUrl) {
+        const opened = window.open(feedbackUrl, "_blank", "noopener,noreferrer");
+        toast.success(
+          opened
+            ? "Service marked complete — feedback form opened in a new tab"
+            : "Service marked complete — allow pop-ups to open the feedback form",
+        );
+      } else {
+        toast.success("Service marked complete — please submit feedback next");
+      }
+      void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
+      void qc.invalidateQueries({ queryKey: ["my-tickets"] });
+    },
+    onError: (err: Error) => toast.error(err.message || "Could not mark service complete"),
   });
 
   const feedback = useMutation({
-    mutationFn: () =>
-      api.submitFeedback(ticketId, { rating, comment: comment.trim() || undefined }),
+    mutationFn: () => api.submitFeedback(ticketId, { comment: comment.trim() || undefined }),
     onSuccess: () => {
-      toast.success("Feedback submitted");
+      toast.success("Feedback recorded — you can now close this request");
       void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
+      void qc.invalidateQueries({ queryKey: ["my-tickets"] });
     },
+    onError: (err: Error) => toast.error(err.message || "Could not record feedback"),
   });
 
   const ticket = data?.ticket;
 
   if (isLoading || !ticket) {
-    return (
-      <p className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading request details…
-      </p>
-    );
+    return <PageLoader label="Loading request details…" />;
   }
+
+  const needsFeedback = ticketNeedsFeedback(ticket);
+  const readyToClose = ticketReadyToClose(ticket);
+  const canMarkComplete = ticketCanMarkComplete(ticket);
 
   return (
     <div className="page-shell">
@@ -72,7 +110,7 @@ function TicketTrackPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <TicketRequestDetails ticket={ticket} className="lg:col-span-2" />
+        <TicketRequestDetails ticket={ticket} className="lg:col-span-2" showFeedback={false} />
 
         <div className="space-y-4">
           <DataPanel title="Assigned personnel">
@@ -86,94 +124,89 @@ function TicketTrackPage() {
                   {ticket.status === "in_progress"
                     ? "Your request is being handled by assigned ICT personnel."
                     : ticket.assignedTo?.length
-                      ? "ICT personnel handling your request."
+                      ? "ICT personnel assigned to your request."
                       : "An admin will assign personnel after your request is approved."}
                 </p>
               </div>
             </div>
           </DataPanel>
 
-          {ticket.status === "in_progress" ? (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-              Service is in progress. You will be notified when work is complete so you can close
-              this request.
-            </div>
+          {canMarkComplete ? (
+            <ActionPanel
+              title="Complete service"
+              description="Mark the service as done when ICT work is finished. The official feedback form will open next."
+            >
+              <Button
+                size="sm"
+                onClick={() => completeService.mutate()}
+                disabled={completeService.isPending}
+              >
+                {completeService.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Mark service complete
+              </Button>
+            </ActionPanel>
           ) : null}
 
-          {ticket.status === "resolved" ? (
-            <DataPanel title="Close request">
-              <div className="space-y-3 px-4 py-4 sm:px-5">
-                <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  Service is complete. Close this request when you are satisfied with the
-                  assistance provided.
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => confirm.mutate(true)}
-                    disabled={confirm.isPending}
-                  >
-                    Close ticket
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => confirm.mutate(false)}
-                    disabled={confirm.isPending}
-                  >
-                    Reopen request
-                  </Button>
-                </div>
-              </div>
-            </DataPanel>
-          ) : null}
-
-          {ticket.status === "closed" && !ticket.feedbackSubmitted ? (
-            <DataPanel title="Submit feedback">
-              <div className="space-y-4 px-4 py-4 sm:px-5">
-                <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  Help us improve by rating this assistance.
-                </div>
-                <div className="space-y-2">
-                  <Label>Rating</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <Button
-                        key={value}
-                        type="button"
-                        size="sm"
-                        variant={rating === value ? "default" : "outline"}
-                        onClick={() => setRating(value)}
-                      >
-                        {value}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="comment">Comments</Label>
-                  <Textarea
-                    id="comment"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Optional feedback"
-                    rows={3}
+          {needsFeedback ? (
+            <>
+              <FlowNotice tone="success" icon={CheckCircle2} title="Service complete">
+                Please submit feedback using the official link below, then confirm here to close
+                this request.
+              </FlowNotice>
+              <DataPanel title="Service feedback" description="Official NMP client satisfaction survey">
+                <div className="px-4 py-4 sm:px-5">
+                  <ClientFeedbackPanel
+                    ticket={ticket}
+                    comment={comment}
+                    onCommentChange={setComment}
+                    onConfirm={() => feedback.mutate()}
+                    isPending={feedback.isPending}
                   />
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    All pending feedback requests:{" "}
+                    <Link to={CLIENT_FEEDBACK} className="font-medium text-maroon hover:underline">
+                      Service Feedback
+                    </Link>
+                  </p>
                 </div>
-                <Button size="sm" onClick={() => feedback.mutate()} disabled={feedback.isPending}>
-                  Submit feedback
+              </DataPanel>
+            </>
+          ) : null}
+
+          {readyToClose ? (
+            <ActionPanel
+              title="Close request"
+              description="Feedback received. Close this request when you are satisfied."
+            >
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => confirm.mutate(true)}
+                  disabled={confirm.isPending}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Close ticket
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => confirm.mutate(false)}
+                  disabled={confirm.isPending}
+                >
+                  Reopen request
                 </Button>
               </div>
-            </DataPanel>
+            </ActionPanel>
           ) : null}
 
-          {ticket.feedbackSubmitted ? (
-            <div className="form-panel text-sm text-muted-foreground">
-              Thank you — your feedback has been recorded
-              {ticket.feedbackRating ? ` (${ticket.feedbackRating}/5).` : "."}
-            </div>
+          {ticket.status === "closed" && ticket.feedbackSubmitted ? (
+            <FlowNotice tone="success" icon={CheckCircle2} title="Request closed">
+              Thank you for your feedback.
+            </FlowNotice>
           ) : null}
         </div>
       </div>

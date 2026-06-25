@@ -1,3 +1,5 @@
+import { ticketNeedsFeedback, ticketReadyToClose, ticketCanMarkComplete } from "@/lib/ticket-workflow";
+
 export type NotificationItem = {
   id: string;
   title: string;
@@ -6,7 +8,6 @@ export type NotificationItem = {
   to: string;
   params?: Record<string, string>;
 };
-
 export function formatNotificationTime(iso?: string): string {
   if (!iso) return "";
   const date = new Date(iso);
@@ -63,25 +64,34 @@ export function clientTicketNotifications(
     ticketNumber: string;
     formTitle: string;
     status: string;
+    feedbackSubmitted?: boolean;
     updatedAt?: string;
     createdAt: string;
   }>,
 ): NotificationItem[] {
-  const actionable = tickets.filter((t) =>
-    ["pending_approval", "resolved", "rejected", "reopened", "approved"].includes(t.status),
+  const actionable = tickets.filter(
+    (t) =>
+      ticketCanMarkComplete(t) ||
+      ticketNeedsFeedback(t) ||
+      ticketReadyToClose(t) ||
+      ["pending_approval", "rejected", "reopened", "approved"].includes(t.status),
   );
 
   return actionable.slice(0, 8).map((t) => ({
     id: t._id,
     title: t.ticketNumber,
-    message: clientStatusMessage(t.status, t.formTitle),
+    message: clientStatusMessage(t.status, t.formTitle, t.feedbackSubmitted),
     time: t.updatedAt ?? t.createdAt,
     to: "/client/requests/$ticketId",
     params: { ticketId: t._id },
   }));
 }
 
-function clientStatusMessage(status: string, formTitle: string): string {
+function clientStatusMessage(
+  status: string,
+  formTitle: string,
+  feedbackSubmitted?: boolean,
+): string {
   switch (status) {
     case "pending_approval":
       return `${formTitle} — awaiting admin approval`;
@@ -89,9 +99,12 @@ function clientStatusMessage(status: string, formTitle: string): string {
       return `${formTitle} — approved by admin`;
     case "open":
     case "in_progress":
-      return `${formTitle} — being processed`;
+    case "pending":
+      return `${formTitle} — mark service complete when ICT work is done`;
     case "resolved":
-      return `${formTitle} — resolved, please confirm`;
+      return feedbackSubmitted
+        ? `${formTitle} — ready to close after feedback`
+        : `${formTitle} — service complete, submit feedback`;
     case "rejected":
       return `${formTitle} — request rejected`;
     case "reopened":
