@@ -64,15 +64,9 @@ function TicketTrackPage() {
     onSuccess: (result) => {
       const feedbackUrl = getClientFeedbackUrl(result.ticket);
       if (feedbackUrl) {
-        const opened = window.open(feedbackUrl, "_blank", "noopener,noreferrer");
-        toast.success(
-          opened
-            ? "Service marked complete — feedback form opened in a new tab"
-            : "Service marked complete — allow pop-ups to open the feedback form",
-        );
-      } else {
-        toast.success("Service marked complete — please submit feedback next");
+        window.open(feedbackUrl, "_blank", "noopener,noreferrer");
       }
+      toast.success("Service marked complete — submit feedback using the link below");
       void qc.invalidateQueries({ queryKey: ["my-ticket", ticketId] });
       void qc.invalidateQueries({ queryKey: ["my-tickets"] });
     },
@@ -90,14 +84,15 @@ function TicketTrackPage() {
   });
 
   const ticket = data?.ticket;
+  const activeTicket = feedback.data?.ticket ?? completeService.data?.ticket ?? ticket;
+  const showFeedbackStep = activeTicket ? ticketNeedsFeedback(activeTicket) : false;
+  const showCompleteButton = activeTicket ? ticketCanMarkComplete(activeTicket) && !showFeedbackStep : false;
+  const readyToClose = activeTicket ? ticketReadyToClose(activeTicket) : false;
+  const showServicePanel = showCompleteButton || showFeedbackStep;
 
   if (isLoading || !ticket) {
     return <PageLoader label="Loading request details…" />;
   }
-
-  const needsFeedback = ticketNeedsFeedback(ticket);
-  const readyToClose = ticketReadyToClose(ticket);
-  const canMarkComplete = ticketCanMarkComplete(ticket);
 
   return (
     <div className="page-shell">
@@ -106,7 +101,7 @@ function TicketTrackPage() {
       <WorkspacePageHeader
         title={ticket.ticketNumber}
         description={ticket.title || ticket.formTitle}
-        meta={<StatusBadge status={ticket.status} />}
+        meta={<StatusBadge status={activeTicket?.status ?? ticket.status} />}
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -131,41 +126,45 @@ function TicketTrackPage() {
             </div>
           </DataPanel>
 
-          {canMarkComplete ? (
+          {showServicePanel ? (
             <ActionPanel
               title="Complete service"
-              description="Mark the service as done when ICT work is finished. The official feedback form will open next."
+              description={
+                showFeedbackStep
+                  ? "Submit the official feedback survey, then confirm below to close this request."
+                  : "Mark the service as done when ICT work is finished."
+              }
             >
-              <Button
-                size="sm"
-                onClick={() => completeService.mutate()}
-                disabled={completeService.isPending}
-              >
-                {completeService.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Mark service complete
-              </Button>
-            </ActionPanel>
-          ) : null}
+              {showCompleteButton ? (
+                <Button
+                  size="sm"
+                  onClick={() => completeService.mutate()}
+                  disabled={completeService.isPending}
+                >
+                  {completeService.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  Mark service complete
+                </Button>
+              ) : null}
 
-          {needsFeedback ? (
-            <>
-              <FlowNotice tone="success" icon={CheckCircle2} title="Service complete">
-                Please submit feedback using the official link below, then confirm here to close
-                this request.
-              </FlowNotice>
-              <DataPanel title="Service feedback" description="Official NMP client satisfaction survey">
-                <div className="px-4 py-4 sm:px-5">
-                  <ClientFeedbackPanel
-                    ticket={ticket}
-                    comment={comment}
-                    onCommentChange={setComment}
-                    onConfirm={() => feedback.mutate()}
-                    isPending={feedback.isPending}
-                  />
+              {showFeedbackStep && activeTicket ? (
+                <div className={showCompleteButton ? "feedback-reveal mt-5 border-t border-border/70 pt-5" : "feedback-reveal"}>
+                  <FlowNotice tone="success" icon={CheckCircle2} title="Service marked complete">
+                    Open the official feedback form using the link below. After you finish the survey,
+                    confirm here so you can close this request.
+                  </FlowNotice>
+                  <div className="mt-4">
+                    <ClientFeedbackPanel
+                      ticket={activeTicket}
+                      comment={comment}
+                      onCommentChange={setComment}
+                      onConfirm={() => feedback.mutate()}
+                      isPending={feedback.isPending}
+                    />
+                  </div>
                   <p className="mt-4 text-xs text-muted-foreground">
                     All pending feedback requests:{" "}
                     <Link to={CLIENT_FEEDBACK} className="font-medium text-maroon hover:underline">
@@ -173,8 +172,8 @@ function TicketTrackPage() {
                     </Link>
                   </p>
                 </div>
-              </DataPanel>
-            </>
+              ) : null}
+            </ActionPanel>
           ) : null}
 
           {readyToClose ? (

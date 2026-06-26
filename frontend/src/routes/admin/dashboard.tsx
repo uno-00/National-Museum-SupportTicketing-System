@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ClipboardCheck, FilePenLine, FileStack, RotateCcw } from "lucide-react";
+import { AlertCircle, ClipboardCheck, FilePenLine, FileStack } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
 import {
@@ -28,7 +28,6 @@ function formatToday() {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
 }
 
@@ -48,18 +47,28 @@ function AdminDashboardPage() {
   const items = forms?.items ?? [];
   const pendingForms = items.filter((f) => f.status === "pending_review").length;
   const draftForms = items.filter((f) => f.status === "draft").length;
-  const publishedForms = items.filter((f) => f.status === "published").length;
   const disapprovedForms = items.filter((f) => f.status === "disapproved");
   const pendingTickets = tickets?.items ?? [];
+  const pendingApprovalCount = tickets?.pendingCount ?? pendingTickets.length;
   const firstName = user?.name?.split(" ")[0];
 
   return (
     <div className="page-shell">
       <DashboardHero
-        eyebrow="Admin portal"
-        title={firstName ? `Good day, ${firstName}` : "Admin Dashboard"}
-        description="Build TA forms, route them through Records, and approve incoming client requests."
+        eyebrow="Admin"
+        title={firstName ? `Good day, ${firstName}` : "Dashboard"}
+        description="Manage TA forms and review incoming client requests."
         meta={<p className="text-xs text-muted-foreground">{formatToday()}</p>}
+        actions={
+          <>
+            <ActionLink to={ADMIN_FORMS}>Form Builder</ActionLink>
+            {pendingApprovalCount > 0 ? (
+              <ActionLink to={ADMIN_APPROVALS} variant="outline">
+                Approvals ({pendingApprovalCount})
+              </ActionLink>
+            ) : null}
+          </>
+        }
       />
 
       {disapprovedForms.length > 0 ? (
@@ -86,25 +95,25 @@ function AdminDashboardPage() {
               </li>
             ))}
           </ul>
-          {disapprovedForms.length > 3 ? (
-            <p className="mt-2 text-xs">+{disapprovedForms.length - 3} more in My Forms</p>
-          ) : null}
         </DashboardAlert>
-      ) : (
-        <DashboardAlert tone="info" title="Form workflow reminder">
-          Submit new forms to Records for review. Once published, clients can use them to file
-          requests.
+      ) : pendingApprovalCount > 0 ? (
+        <DashboardAlert tone="warning" title={`${pendingApprovalCount} client request${pendingApprovalCount === 1 ? "" : "s"} awaiting approval`}>
+          Review submitted requests before they move to assignment and processing.
+          <div className="mt-3">
+            <ActionLink to={ADMIN_APPROVALS}>Open Approvals</ActionLink>
+          </div>
         </DashboardAlert>
-      )}
+      ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="dashboard-stats">
         <StatCard
-          label="Draft forms"
-          value={draftForms}
-          hint="Not yet sent to Records"
-          to={ADMIN_MY_FORMS}
-          icon={FilePenLine}
-          loading={formsLoading}
+          label="Requests to approve"
+          value={pendingApprovalCount}
+          hint="Client submissions"
+          to={ADMIN_APPROVALS}
+          icon={ClipboardCheck}
+          accent="info"
+          loading={ticketsLoading}
         />
         <StatCard
           label="Pending review"
@@ -116,46 +125,13 @@ function AdminDashboardPage() {
           loading={formsLoading}
         />
         <StatCard
-          label="Needs revision"
-          value={disapprovedForms.length}
-          hint="Returned with remarks"
+          label="Draft forms"
+          value={draftForms}
+          hint="Not yet submitted"
           to={ADMIN_MY_FORMS}
-          icon={RotateCcw}
-          accent="danger"
+          icon={FilePenLine}
           loading={formsLoading}
         />
-        <StatCard
-          label="Requests to approve"
-          value={tickets?.pendingCount ?? pendingTickets.length}
-          hint="Client submissions"
-          to={ADMIN_APPROVALS}
-          icon={ClipboardCheck}
-          accent="info"
-          loading={ticketsLoading}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <StatCard
-          label="Published forms"
-          value={publishedForms}
-          hint="Live for client use"
-          to={ADMIN_MY_FORMS}
-          accent="success"
-          loading={formsLoading}
-        />
-        <div className="dashboard-alert lg:col-span-2">
-          <p className="text-sm font-medium text-foreground">Quick paths</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <ActionLink to={ADMIN_FORMS}>Form Builder</ActionLink>
-            <ActionLink to={ADMIN_MY_FORMS} variant="outline">
-              My Forms
-            </ActionLink>
-            <ActionLink to={ADMIN_APPROVALS} variant="outline">
-              Approvals
-            </ActionLink>
-          </div>
-        </div>
       </div>
 
       <DataPanel
@@ -173,7 +149,7 @@ function AdminDashboardPage() {
         ) : pendingTickets.length === 0 ? (
           <EmptyState
             title="No pending approvals"
-            description="New client requests will appear here when submitted against published forms."
+            description="New client requests will appear here when submitted."
           />
         ) : (
           <ul className="divide-y divide-border/80">

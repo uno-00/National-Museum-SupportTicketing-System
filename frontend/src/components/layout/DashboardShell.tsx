@@ -130,7 +130,7 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-64 shrink-0 border-r border-border shadow-sm lg:block">
+      <aside className="hidden w-64 shrink-0 border-r border-border/70 bg-gradient-to-b from-card via-card to-card/95 shadow-[4px_0_24px_color-mix(in_oklab,var(--maroon-deep)_4%,transparent)] lg:block">
         {sidebar}
       </aside>
 
@@ -181,7 +181,7 @@ export function DashboardShell({
               <button
                 type="button"
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:border-maroon/20 hover:bg-muted/50"
+                className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-2.5 py-1.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-maroon/25 hover:bg-muted/50 hover:shadow-md"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
                   {userInitials(user?.name, user?.email)}
@@ -190,7 +190,7 @@ export function DashboardShell({
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               {profileOpen ? (
-                <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg">
+                <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border/80 bg-card/95 py-1 shadow-xl backdrop-blur-md">
                   <div className="border-b border-border px-3 py-2.5">
                     <p className="truncate text-sm font-medium">{user?.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{user?.email}</p>

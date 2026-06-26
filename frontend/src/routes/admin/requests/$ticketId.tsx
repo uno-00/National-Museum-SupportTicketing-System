@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api/client";
 import type { TicketStatus } from "@/lib/api/types";
-import { ADMIN_APPROVALS, ADMIN_REQUESTS } from "@/lib/navigation";
+import { ADMIN_APPROVALS, ADMIN_DASHBOARD, ADMIN_REQUESTS } from "@/lib/navigation";
 import { useAdminSession } from "@/lib/use-portal-session";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +23,14 @@ export const Route = createFileRoute("/admin/requests/$ticketId")({
 function invalidateAdminTicketQueries(qc: ReturnType<typeof useQueryClient>) {
   void qc.invalidateQueries({ queryKey: ["pending-tickets"] });
   void qc.invalidateQueries({ queryKey: ["admin-tickets-pending"] });
+  void qc.invalidateQueries({ queryKey: ["admin-tickets-dashboard"] });
   void qc.invalidateQueries({ queryKey: ["all-tickets"] });
   void qc.invalidateQueries({ queryKey: ["assigned-tickets"] });
 }
 
 function TicketDetailPage() {
   const { ticketId } = Route.useParams();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { canQuery } = useAdminSession();
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
@@ -73,9 +75,9 @@ function TicketDetailPage() {
   const assign = useMutation({
     mutationFn: () => api.assignTicket(ticketId, selectedAssigneeIds, "admin"),
     onSuccess: () => {
-      toast.success("Personnel assigned — status is now In Progress");
+      toast.success("Personnel assigned — status set to In Progress");
       invalidateAdminTicketQueries(qc);
-      void qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
+      void navigate({ to: ADMIN_DASHBOARD, replace: true });
     },
     onError: (err: Error) => {
       toast.error(err instanceof ApiError ? err.message : "Could not assign personnel.");
@@ -117,6 +119,7 @@ function TicketDetailPage() {
   const isPendingApproval = ticket.status === "pending_approval";
   const backTo = isPendingApproval ? ADMIN_APPROVALS : ADMIN_REQUESTS;
   const isAwaitingClient = ticket.status === "resolved";
+  const canAssign = !isPendingApproval && !isAwaitingClient && ticket.status !== "closed";
 
   return (
     <div className="page-shell">
@@ -131,6 +134,9 @@ function TicketDetailPage() {
             <StatusBadge status={ticket.status} />
             {ticket.creatorName ? (
               <span className="text-muted-foreground">· Client: {ticket.creatorName}</span>
+            ) : null}
+            {ticket.division ? (
+              <span className="text-muted-foreground">· Division: {ticket.division}</span>
             ) : null}
           </div>
         }
@@ -175,10 +181,17 @@ function TicketDetailPage() {
 
           {!isPendingApproval ? (
             <>
+              {canAssign ? (
               <ActionPanel
                 title="Assign personnel"
-                description="Select ICT personnel. Assigning automatically sets the request to In Progress."
+                description="Select ICT personnel for this request. The client's division is shown below — ICT handles requests from all NMP offices."
               >
+                <FlowNotice tone="info" title="Requestor's division">
+                  <span className="font-medium text-foreground">{ticket.division?.trim() || "Not specified"}</span>
+                  {ticket.creatorName ? (
+                    <span className="text-muted-foreground"> · {ticket.creatorName}</span>
+                  ) : null}
+                </FlowNotice>
                 {ticket.assignedTo?.length ? (
                   <p className="text-sm">
                     Currently assigned:{" "}
@@ -188,7 +201,7 @@ function TicketDetailPage() {
                   </p>
                 ) : null}
                 <div className="max-w-md space-y-2">
-                  <Label>Assigned personnel</Label>
+                  <Label>ICT personnel (all divisions)</Label>
                   <div
                     className={cn(
                       "max-h-48 space-y-1 overflow-y-auto rounded-md border border-input bg-background p-2 shadow-sm",
@@ -237,9 +250,10 @@ function TicketDetailPage() {
                   onClick={() => assign.mutate()}
                   disabled={selectedAssigneeIds.length === 0 || assign.isPending}
                 >
-                  Assign
+                  {assign.isPending ? "Assigning…" : "Assign"}
                 </Button>
               </ActionPanel>
+              ) : null}
 
               {isAwaitingClient ? (
                 <FlowNotice tone="success" title="Waiting for client">

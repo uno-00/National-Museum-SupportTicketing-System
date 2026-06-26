@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Clock, FileText, FolderOpen } from "lucide-react";
+import { FileText, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth";
@@ -16,7 +16,7 @@ import {
   StatCard,
 } from "@/components/layout/workspace-ui";
 import { FormPdfViewerDialog } from "@/components/records/FormPdfViewerDialog";
-import { RECORDS_ACTIVITY, RECORDS_PENDING, RECORDS_PUBLISHED } from "@/lib/navigation";
+import { RECORDS_PENDING, RECORDS_PUBLISHED } from "@/lib/navigation";
 import { useRecordsSession } from "@/lib/use-portal-session";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,7 +30,6 @@ function formatToday() {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
 }
 
@@ -51,33 +50,34 @@ function RecordsDashboardPage() {
   });
 
   const pending = data?.recentPending ?? [];
-  const recentActivity = data?.activities?.slice(0, 4) ?? [];
   const firstName = user?.name?.split(" ")[0];
   const pendingCount = data?.pendingCount ?? 0;
 
   return (
     <div className="page-shell">
       <DashboardHero
-        eyebrow="Records portal"
-        title={firstName ? `Welcome, ${firstName}` : "Records Dashboard"}
+        eyebrow="Records"
+        title={firstName ? `Welcome, ${firstName}` : "Dashboard"}
         description="Review admin-submitted forms and publish approved TA forms for client use."
         meta={<p className="text-xs text-muted-foreground">{formatToday()}</p>}
+        actions={
+          pendingCount > 0 ? (
+            <ActionLink to={RECORDS_PENDING}>Review pending ({pendingCount})</ActionLink>
+          ) : (
+            <ActionLink to={RECORDS_PUBLISHED} variant="outline">
+              Published forms
+            </ActionLink>
+          )
+        }
       />
 
       {pendingCount > 0 ? (
-        <DashboardAlert
-          tone="warning"
-          title={`${pendingCount} form${pendingCount === 1 ? "" : "s"} awaiting review`}
-        >
-          Open Pending Forms to approve or return forms to Admin with remarks.
+        <DashboardAlert tone="warning" title={`${pendingCount} form${pendingCount === 1 ? "" : "s"} awaiting review`}>
+          Approve and publish forms, or return them to Admin with remarks.
         </DashboardAlert>
-      ) : (
-        <DashboardAlert tone="info" title="All caught up">
-          No forms are waiting for review right now. Published forms remain available to clients.
-        </DashboardAlert>
-      )}
+      ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="dashboard-stats dashboard-stats-2">
         <StatCard
           label="Pending review"
           value={pendingCount}
@@ -96,19 +96,10 @@ function RecordsDashboardPage() {
           accent="success"
           loading={isLoading}
         />
-        <StatCard
-          label="Activity logs"
-          value={recentActivity.length > 0 ? "Recent" : "—"}
-          hint="Latest review actions"
-          to={RECORDS_ACTIVITY}
-          icon={BookOpen}
-          accent="info"
-          loading={isLoading}
-        />
       </div>
 
       <DataPanel
-        title="Recent pending forms"
+        title="Pending forms"
         action={
           pending.length > 0 ? (
             <ActionLink to={RECORDS_PENDING} variant="outline">
@@ -121,8 +112,8 @@ function RecordsDashboardPage() {
           <PanelLoading label="Loading forms…" />
         ) : pending.length === 0 ? (
           <EmptyState
-            title="No forms awaiting review"
-            description="When admins submit forms for review, they will appear here for approval or disapproval."
+            title="All caught up"
+            description="No forms are waiting for review right now."
           />
         ) : (
           <ul className="divide-y divide-border/80">
@@ -130,7 +121,7 @@ function RecordsDashboardPage() {
               <ListRow
                 key={row._id}
                 title={row.title}
-                subtitle={`${row.refNumber} · ${row.createdBy?.name ?? "Admin"} · ${row.department ?? row.createdBy?.division ?? "—"}`}
+                subtitle={`${row.refNumber} · ${row.createdBy?.name ?? "Admin"}`}
                 trailing={<FormStatusBadge status={row.status} />}
                 action={
                   <div className="flex flex-wrap items-center gap-2">
@@ -142,14 +133,13 @@ function RecordsDashboardPage() {
                         setViewForm({ id: row._id, title: row.title, refNumber: row.refNumber })
                       }
                     >
-                      <FileText className="mr-1.5 h-3.5 w-3.5" />
                       View file
                     </Button>
                     <Link
                       to="/records/forms/$formId"
                       params={{ formId: row._id }}
                       className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
+                        buttonVariants({ variant: "default", size: "sm" }),
                         "shadow-sm",
                       )}
                     >
@@ -162,31 +152,6 @@ function RecordsDashboardPage() {
           </ul>
         )}
       </DataPanel>
-
-      {recentActivity.length > 0 ? (
-        <DataPanel title="Latest activity">
-          <ul className="divide-y divide-border/80">
-            {recentActivity.map((a) => (
-              <ListRow
-                key={a._id}
-                title={a.summary}
-                subtitle={`${a.actorName} · ${new Date(a.createdAt).toLocaleString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}`}
-                trailing={
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" />
-                    {a.action.replace(/_/g, " ")}
-                  </span>
-                }
-              />
-            ))}
-          </ul>
-        </DataPanel>
-      ) : null}
 
       <FormPdfViewerDialog
         formId={viewForm?.id ?? null}

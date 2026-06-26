@@ -12,7 +12,6 @@ import {
   PageLoader,
   WorkspacePageHeader,
 } from "@/components/layout/workspace-ui";
-import { FormFieldsSummary } from "@/components/records/FormFieldsSummary";
 import { FormUploadedFileViewer } from "@/components/records/FormUploadedFileViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,8 +117,6 @@ function FormReviewPage() {
       >
         <FormUploadedFileViewer form={form} />
       </DataPanel>
-
-      <FormFieldsSummary form={form} />
 
       {canReview ? (
         <ActionPanel

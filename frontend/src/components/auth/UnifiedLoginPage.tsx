@@ -142,7 +142,7 @@ export function UnifiedLoginPage() {
 
               <Button
                 type="submit"
-                className="h-10 w-full border border-white/10 bg-primary shadow-lg shadow-black/20 hover:bg-primary/90"
+                className="h-10 w-full"
                 disabled={isSubmitting || apiHealth === "down"}
               >
                 {isSubmitting ? (
