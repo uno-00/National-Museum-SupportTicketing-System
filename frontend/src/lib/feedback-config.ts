@@ -1,6 +1,6 @@
 import type { TicketRecord } from "@/lib/api/types";
 
-/** Official NMP Online Survey — https://feedback.nationalmuseum.gov.ph/ */
+/** Official NMP Client Satisfaction Survey form */
 export function getClientFeedbackUrl(
   ticket?: Pick<TicketRecord, "ticketNumber" | "_id">,
 ): string | null {

@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-primary/20 bg-primary text-primary-foreground shadow-md shadow-[color-mix(in_oklab,var(--maroon)_22%,transparent)] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[color-mix(in_oklab,var(--maroon)_28%,transparent)] hover:brightness-105 active:translate-y-0 active:scale-[0.98]",
+          "border border-primary/25 bg-gradient-to-b from-primary to-[color-mix(in_oklch,var(--maroon-deep)_88%,var(--maroon))] text-primary-foreground shadow-md shadow-[color-mix(in_oklab,var(--maroon)_24%,transparent)] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[color-mix(in_oklab,var(--maroon)_32%,transparent)] hover:brightness-[1.03] active:translate-y-0 active:scale-[0.98]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-destructive/92 active:translate-y-0 active:scale-[0.98]",
         outline:

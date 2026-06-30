@@ -59,7 +59,7 @@ function RecordsDashboardPage() {
         eyebrow="Records"
         title={firstName ? `Welcome, ${firstName}` : "Dashboard"}
         description="Review admin-submitted forms and publish approved TA forms for client use."
-        meta={<p className="text-xs text-muted-foreground">{formatToday()}</p>}
+        meta={<p className="time-pill">{formatToday()}</p>}
         actions={
           pendingCount > 0 ? (
             <ActionLink to={RECORDS_PENDING}>Review pending ({pendingCount})</ActionLink>

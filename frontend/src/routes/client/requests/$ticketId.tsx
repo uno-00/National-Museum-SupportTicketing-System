@@ -151,22 +151,20 @@ function TicketTrackPage() {
               ) : null}
 
               {showFeedbackStep && activeTicket ? (
-                <div className={showCompleteButton ? "feedback-reveal mt-5 border-t border-border/70 pt-5" : "feedback-reveal"}>
-                  <FlowNotice tone="success" icon={CheckCircle2} title="Service marked complete">
-                    Open the official feedback form using the link below. After you finish the survey,
-                    confirm here so you can close this request.
-                  </FlowNotice>
-                  <div className="mt-4">
-                    <ClientFeedbackPanel
-                      ticket={activeTicket}
-                      comment={comment}
-                      onCommentChange={setComment}
-                      onConfirm={() => feedback.mutate()}
-                      isPending={feedback.isPending}
-                    />
-                  </div>
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    All pending feedback requests:{" "}
+                <div
+                  className={
+                    showCompleteButton ? "feedback-reveal mt-5 border-t border-border/70 pt-5" : "feedback-reveal"
+                  }
+                >
+                  <ClientFeedbackPanel
+                    ticket={activeTicket}
+                    comment={comment}
+                    onCommentChange={setComment}
+                    onConfirm={() => feedback.mutate()}
+                    isPending={feedback.isPending}
+                  />
+                  <p className="mt-4 text-center text-xs text-muted-foreground sm:text-left">
+                    More pending requests?{" "}
                     <Link to={CLIENT_FEEDBACK} className="font-medium text-maroon hover:underline">
                       Service Feedback
                     </Link>

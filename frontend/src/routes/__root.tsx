@@ -11,14 +11,15 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
 import { LOGIN } from "@/lib/navigation";
+import { NavigationProgress } from "@/components/layout/PageTransition";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md rounded-2xl border border-border/80 bg-card p-8 text-center shadow-xl">
+    <div className="gate-page">
+      <div className="gate-page-card">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-maroon">NMP TARF</p>
-        <h1 className="mt-3 text-6xl font-bold tracking-tight text-foreground">404</h1>
+        <p className="gate-page-code mt-4">404</p>
         <h2 className="mt-3 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
@@ -26,7 +27,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to={LOGIN}
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
           >
             Sign in
           </Link>
@@ -41,10 +42,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md rounded-2xl border border-border/80 bg-card p-8 text-center shadow-xl">
+    <div className="gate-page">
+      <div className="gate-page-card">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-maroon">NMP TARF</p>
-        <h1 className="mt-3 text-xl font-semibold text-foreground">This page didn't load</h1>
+        <h1 className="mt-4 text-xl font-semibold text-foreground">This page didn't load</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
@@ -54,13 +55,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
           >
             Try again
           </button>
           <a
             href={LOGIN}
-            className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-maroon/30 hover:bg-accent hover:shadow-md"
           >
             Sign in
           </a>
@@ -94,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", href: "/nmp-logo.png" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap",
       },
     ],
   }),
@@ -124,6 +125,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <NavigationProgress />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>

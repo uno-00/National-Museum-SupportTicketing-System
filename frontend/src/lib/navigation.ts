@@ -1,20 +1,4 @@
-import type { ApiUser } from "@/lib/api/types";
-import type { PortalSlot } from "@/lib/sessions";
-
 export const LOGIN = "/login";
-
-/** @deprecated Use LOGIN — kept for redirects from old bookmarks */
-export const ADMIN_LOGIN = "/admin/login";
-export const RECORDS_LOGIN = "/records/login";
-export const CLIENT_LOGIN = "/client/login";
-
-export function loginForSlot(_slot: PortalSlot): string {
-  return LOGIN;
-}
-
-export function isPortalLoginPath(pathname: string): boolean {
-  return pathname === LOGIN;
-}
 
 export const ADMIN_DASHBOARD = "/admin/dashboard";
 export const ADMIN_FORMS = "/admin/forms";
@@ -42,15 +26,6 @@ export function isClientRole(role: string | undefined) {
 }
 export function isRecordsRole(role: string | undefined) {
   return role === "record_management";
-}
-export function validateAdminUser(user: ApiUser) {
-  return isAdminRole(user.role);
-}
-export function validateClientUser(user: ApiUser) {
-  return isClientRole(user.role);
-}
-export function validateRecordsUser(user: ApiUser) {
-  return isRecordsRole(user.role);
 }
 
 /** After unified login, redirect by role */

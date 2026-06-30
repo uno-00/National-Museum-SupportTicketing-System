@@ -58,7 +58,7 @@ function AdminDashboardPage() {
         eyebrow="Admin"
         title={firstName ? `Good day, ${firstName}` : "Dashboard"}
         description="Manage TA forms and review incoming client requests."
-        meta={<p className="text-xs text-muted-foreground">{formatToday()}</p>}
+        meta={<p className="time-pill">{formatToday()}</p>}
         actions={
           <>
             <ActionLink to={ADMIN_FORMS}>Form Builder</ActionLink>

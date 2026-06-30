@@ -11,12 +11,6 @@ import { dashboardForRole } from "@/lib/navigation";
 import { useApiHealth } from "@/lib/use-api-health";
 import { cn } from "@/lib/utils";
 
-const DEMO_ACCOUNTS = [
-  { role: "Admin", email: "admin@nmp.gov.ph", password: "admin123" },
-  { role: "Records", email: "records@nmp.gov.ph", password: "records123" },
-  { role: "Client", email: "user@nmp.gov.ph", password: "user123" },
-] as const;
-
 export function UnifiedLoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -47,24 +41,18 @@ export function UnifiedLoginPage() {
 
   return (
     <div className="login-page">
-      <MuseumBackdrop variant="login" />
+      <MuseumBackdrop />
 
       <div className="login-center">
         <div className="login-card">
           <div className="login-form-inner">
-            <NmpLogo size="lg" className="mx-auto mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
+            <NmpLogo size="md" className="mx-auto mb-4 h-20 w-20 drop-shadow-[0_6px_18px_rgba(0,0,0,0.32)]" />
 
-            <div className="mb-8 text-center">
-              <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
-                TARF System
-              </p>
-              <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <div className="mb-5 text-center">
+              <span className="login-eyebrow">TARF System</span>
+              <h1 className="login-title mt-2 text-balance text-lg font-semibold tracking-tight">
                 Sign in
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-white/75">
-                Use your NMP account. You will be routed to Admin, Records, or Client based on your
-                role.
-              </p>
             </div>
 
             {apiHealth === "down" ? (
@@ -82,9 +70,9 @@ export function UnifiedLoginPage() {
               <p className="login-alert-info mb-4 text-center">Checking API connection…</p>
             ) : null}
 
-            <form onSubmit={onSubmit} className="mt-2 space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-white/90">
+            <form onSubmit={onSubmit} className="space-y-3.5">
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-xs text-white/90">
                   Email or username
                 </Label>
                 <Input
@@ -96,15 +84,15 @@ export function UnifiedLoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isSubmitting}
                   className={cn(
-                    "h-10 border-white/25 bg-white/92 text-foreground shadow-sm",
+                    "h-9 text-sm border-white/25 bg-white/92 text-foreground shadow-sm",
                     "placeholder:text-muted-foreground focus-visible:border-white/50 focus-visible:ring-white/30",
                   )}
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white/90">
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-xs text-white/90">
                   Password
                 </Label>
                 <div className="relative">
@@ -117,7 +105,7 @@ export function UnifiedLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isSubmitting}
                     className={cn(
-                      "h-10 border-white/25 bg-white/92 pr-10 text-foreground shadow-sm",
+                      "h-9 text-sm border-white/25 bg-white/92 pr-9 text-foreground shadow-sm",
                       "placeholder:text-muted-foreground focus-visible:border-white/50 focus-visible:ring-white/30",
                     )}
                     required
@@ -142,7 +130,8 @@ export function UnifiedLoginPage() {
 
               <Button
                 type="submit"
-                className="h-10 w-full"
+                size="sm"
+                className="h-9 w-full"
                 disabled={isSubmitting || apiHealth === "down"}
               >
                 {isSubmitting ? (
@@ -155,21 +144,6 @@ export function UnifiedLoginPage() {
                 )}
               </Button>
             </form>
-
-            <div className="login-demo-box mt-6 space-y-2 px-3 py-3 text-[11px] leading-relaxed text-white/75">
-              <p className="text-center font-medium text-white/90">Demo accounts</p>
-              {DEMO_ACCOUNTS.map(({ role, email, password: demoPassword }) => (
-                <p key={role} className="text-center">
-                  <span className="font-medium text-white/90">{role}:</span>{" "}
-                  <span className="font-mono">{email}</span> /{" "}
-                  <span className="font-mono">{demoPassword}</span>
-                </p>
-              ))}
-              <p className="pt-1 text-center text-white/65">
-                + 14 more client accounts (e.g. maria.santos@nmp.gov.ph) — all use password{" "}
-                <span className="font-mono">user123</span>
-              </p>
-            </div>
           </div>
         </div>
       </div>

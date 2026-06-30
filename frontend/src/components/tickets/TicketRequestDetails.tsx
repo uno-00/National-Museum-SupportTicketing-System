@@ -35,7 +35,7 @@ export function TicketRequestDetails({
             {answerRows.map((row) => (
               <div
                 key={row.label}
-                className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,220px)_1fr] sm:px-5"
+                className="answer-row grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,220px)_1fr] sm:px-5"
               >
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {row.label}

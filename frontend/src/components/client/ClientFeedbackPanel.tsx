@@ -1,4 +1,4 @@
-import { ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import type { TicketRecord } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,6 @@ type ClientFeedbackPanelProps = {
   onCommentChange: (value: string) => void;
   onConfirm: () => void;
   isPending?: boolean;
-  compact?: boolean;
 };
 
 export function ClientFeedbackPanel({
@@ -20,7 +19,6 @@ export function ClientFeedbackPanel({
   onCommentChange,
   onConfirm,
   isPending = false,
-  compact = false,
 }: ClientFeedbackPanelProps) {
   const feedbackUrl = getClientFeedbackUrl(ticket);
 
@@ -34,46 +32,63 @@ export function ClientFeedbackPanel({
   }
 
   return (
-    <div className={compact ? "space-y-3" : "space-y-4"}>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Open the official NMP feedback form, complete the survey, then confirm here so you can close
-        this request.
-      </p>
-      <div className="rounded-xl border border-border/80 bg-muted/20 px-4 py-3.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Official feedback link
-        </p>
-        <a
-          href={feedbackUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block break-all text-sm font-medium text-maroon hover:underline"
-        >
-          {feedbackUrl}
-        </a>
-      </div>
-      <Button asChild size="sm" className="w-full shadow-sm sm:w-auto">
-        <a href={feedbackUrl} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Open feedback form
-        </a>
-      </Button>
-      <div className="space-y-2 border-t border-border/70 pt-4">
-        <Label htmlFor={`feedback-comment-${ticket._id}`}>
-          Notes for admin <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Textarea
-          id={`feedback-comment-${ticket._id}`}
-          value={comment}
-          onChange={(e) => onCommentChange(e.target.value)}
-          placeholder="Optional summary or reference from your feedback submission"
-          rows={compact ? 2 : 3}
-          className="rounded-lg bg-background"
-        />
-      </div>
-      <Button size="sm" onClick={onConfirm} disabled={isPending} className="shadow-sm">
-        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "I've submitted feedback"}
-      </Button>
-    </div>
+    <ol className="feedback-steps">
+      <li className="feedback-step">
+        <span className="feedback-step-marker" aria-hidden>
+          1
+        </span>
+        <div className="feedback-step-body">
+          <p className="text-sm font-semibold text-foreground">Complete the official survey</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Opens in a new tab. Your ticket number is included automatically.
+          </p>
+          <Button asChild size="sm" className="mt-3 shadow-sm">
+            <a href={feedbackUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              Open Client Satisfaction Survey
+            </a>
+          </Button>
+        </div>
+      </li>
+
+      <li className="feedback-step">
+        <span className="feedback-step-marker" aria-hidden>
+          2
+        </span>
+        <div className="feedback-step-body">
+          <p className="text-sm font-semibold text-foreground">Confirm when you&apos;re done</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Add optional notes for admin, then confirm so you can close this request.
+          </p>
+          <div className="mt-3 space-y-2">
+            <Label htmlFor={`feedback-comment-${ticket._id}`} className="text-xs">
+              Notes for admin <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id={`feedback-comment-${ticket._id}`}
+              value={comment}
+              onChange={(e) => onCommentChange(e.target.value)}
+              placeholder="e.g. Survey reference or short summary"
+              rows={2}
+              className="min-h-[4.5rem] resize-none rounded-lg bg-background text-sm"
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="mt-3 shadow-sm"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            I&apos;ve submitted feedback
+          </Button>
+        </div>
+      </li>
+    </ol>
   );
 }

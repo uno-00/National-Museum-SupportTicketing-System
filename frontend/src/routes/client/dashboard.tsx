@@ -66,7 +66,7 @@ function ClientDashboardPage() {
         title={firstName ? `Welcome back, ${firstName}` : "Your requests"}
         description="Track technical assistance requests and submit new ones when you need support."
         meta={
-          <p className="text-xs text-muted-foreground">
+          <p className="time-pill">
             {formatToday()}
             {user?.division ? ` · ${user.division}` : ""}
           </p>

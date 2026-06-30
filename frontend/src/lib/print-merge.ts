@@ -55,9 +55,6 @@ export function buildSampleSubmissionValues(fields: FormField[]): Record<string,
   return map;
 }
 
-/** Actual submitted answers mapped for print layout overlays. */
-export { buildSubmissionDisplayValues } from "@/lib/placement-values";
-
 /** Final body text for printing: no designer blocks, no `{{}}` tokens. */
 export function buildPrintReadyText(template: string, values: Record<string, string>): string {
   const cleaned = stripDesignerPlacementBlock(template);

@@ -2,10 +2,11 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, LogOut, Menu, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NmpLogo } from "@/components/layout/NmpLogo";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useAuth } from "@/lib/auth";
 import type { NotificationItem } from "@/lib/notifications";
-import { loginForSlot } from "@/lib/navigation";
+import { LOGIN } from "@/lib/navigation";
 import { pathToSlot } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +68,7 @@ export function DashboardShell({
     setProfileOpen(false);
     if (activeSlot) {
       logout(activeSlot);
-      void navigate({ to: loginForSlot(activeSlot), replace: true });
+      void navigate({ to: LOGIN, replace: true });
     }
   };
 
@@ -89,7 +90,7 @@ export function DashboardShell({
         <div className="sidebar-brand-divider" aria-hidden />
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className="workspace-scroll flex-1 space-y-1 overflow-y-auto px-3 py-4">
         <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           Menu
         </p>
@@ -101,14 +102,24 @@ export function DashboardShell({
               key={item.to}
               to={item.to}
               className={cn(
-                "flex items-center justify-between gap-2 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all",
+                "group flex items-center justify-between gap-2 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all",
                 active
                   ? "sidebar-nav-active"
                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
               )}
             >
               <span className="flex min-w-0 items-center gap-2.5">
-                {Icon ? <Icon className="h-4 w-4 shrink-0 opacity-80" /> : null}
+                {Icon ? (
+                  <span
+                    className={cn(
+                      "sidebar-nav-icon",
+                      active ? "sidebar-nav-icon-active" : "sidebar-nav-icon-idle",
+                      !active && "group-hover:bg-muted group-hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                ) : null}
                 <span className="truncate">{item.label}</span>
               </span>
               {item.badge ? (
@@ -125,6 +136,10 @@ export function DashboardShell({
           );
         })}
       </nav>
+
+      <div className="sidebar-footer hidden lg:block">
+        <p className="sidebar-footer-text">National Museum of the Philippines</p>
+      </div>
     </div>
   );
 
@@ -158,16 +173,21 @@ export function DashboardShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="workspace-header relative sticky top-0 z-40 flex items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-muted lg:hidden"
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted lg:hidden"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="text-sm font-semibold lg:hidden">{portalTitle}</span>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-semibold lg:hidden">{portalTitle}</span>
+              <span className="hidden text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground lg:block">
+                {portalTitle}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -183,7 +203,7 @@ export function DashboardShell({
                 onClick={() => setProfileOpen((v) => !v)}
                 className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-2.5 py-1.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-maroon/25 hover:bg-muted/50 hover:shadow-md"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                <span className="profile-avatar flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[10px] font-bold text-primary ring-2 ring-primary/15">
                   {userInitials(user?.name, user?.email)}
                 </span>
                 <span className="max-w-[8rem] truncate">{user?.name}</span>
@@ -208,8 +228,10 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="workspace-main flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <main className="workspace-main workspace-scroll flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-6xl">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
     </div>

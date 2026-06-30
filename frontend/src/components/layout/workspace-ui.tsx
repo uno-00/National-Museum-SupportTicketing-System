@@ -42,7 +42,7 @@ export function WorkspacePageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1 className="text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl hero-title">
           {title}
         </h1>
         {description ? (
@@ -53,7 +53,7 @@ export function WorkspacePageHeader({
         {meta ? <div className="mt-3">{meta}</div> : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-sm backdrop-blur-sm">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-sm backdrop-blur-sm ring-1 ring-white/60">
           {actions}
         </div>
       ) : null}
@@ -153,8 +153,8 @@ export function PortalGateCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="portal-gate-card">
+    <div className="gate-page">
+      <div className="portal-gate-card page-transition-soft">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-maroon">NMP TARF</p>
         <h1 className="mt-2 text-xl font-semibold text-foreground">{title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
@@ -166,8 +166,8 @@ export function PortalGateCard({
 
 export function PageLoader({ label = "Loading…" }: { label?: string }) {
   return (
-    <div className="page-loader">
-      <Loader2 className="h-4 w-4 animate-spin text-maroon" />
+    <div className="page-loader" role="status" aria-live="polite">
+      <span className="sr-only">{label}</span>
       {label}
     </div>
   );
@@ -203,7 +203,7 @@ export function DashboardHero({
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           {eyebrow ? <span className="dashboard-eyebrow">{eyebrow}</span> : null}
-          <h1 className="mt-2 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-[1.65rem]">
+          <h1 className="mt-2 text-balance text-2xl font-semibold tracking-tight sm:text-[1.65rem] hero-title">
             {title}
           </h1>
           {description ? (
