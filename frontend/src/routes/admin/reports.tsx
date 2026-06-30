@@ -82,17 +82,16 @@ function ReportsPage() {
               <tr>
                 <th className="px-4 py-3 sm:px-5">Ticket</th>
                 <th className="px-4 py-3 sm:px-5">Client</th>
-                <th className="px-4 py-3 sm:px-5">Rating</th>
                 <th className="px-4 py-3 sm:px-5">Comment</th>
                 <th className="px-4 py-3 sm:px-5">Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <LoadingRows cols={5} />
+                <LoadingRows cols={4} />
               ) : feedbackItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={4}>
                     <EmptyState
                       title="No feedback yet"
                       description="Client comments appear here after they confirm feedback on a completed service."
@@ -104,9 +103,6 @@ function ReportsPage() {
                   <tr key={t._id} className="border-t border-border/70 align-top">
                     <td className="px-4 py-3.5 font-mono text-xs sm:px-5">{t.ticketNumber}</td>
                     <td className="px-4 py-3.5 sm:px-5">{t.creatorName}</td>
-                    <td className="px-4 py-3.5 sm:px-5">
-                      {t.feedbackRating ? `${t.feedbackRating}/5` : "—"}
-                    </td>
                     <td className="max-w-md px-4 py-3.5 sm:px-5">
                       <p className="whitespace-pre-wrap text-sm">
                         {t.feedbackComment?.trim() || "—"}

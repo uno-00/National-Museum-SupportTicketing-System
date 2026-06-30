@@ -123,7 +123,7 @@ function FormReviewPage() {
           title="Recommendation"
           description="After reviewing the uploaded file above, choose Approve & publish or Disapprove with remarks."
         >
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <label className="flex items-center gap-2 rounded-lg border border-border/80 bg-background px-3 py-2 text-sm">
               <input
                 type="radio"
@@ -150,23 +150,27 @@ function FormReviewPage() {
               onChange={(e) => setRemarks(e.target.value)}
             />
           ) : null}
-          <Button
-            disabled={
-              review.isPending ||
-              review.isSuccess ||
-              (decision === "disapproved" && !remarks.trim())
-            }
-            onClick={() => {
-              if (review.isPending || review.isSuccess) return;
-              review.mutate();
-            }}
-          >
-            {review.isPending
-              ? "Submitting…"
-              : review.isSuccess
-                ? "Submitted — redirecting…"
-                : "Submit recommendation"}
-          </Button>
+          <div className="flex justify-end pt-0.5">
+            <Button
+              size="sm"
+              className="w-fit"
+              disabled={
+                review.isPending ||
+                review.isSuccess ||
+                (decision === "disapproved" && !remarks.trim())
+              }
+              onClick={() => {
+                if (review.isPending || review.isSuccess) return;
+                review.mutate();
+              }}
+            >
+              {review.isPending
+                ? "Submitting…"
+                : review.isSuccess
+                  ? "Submitted — redirecting…"
+                  : "Submit recommendation"}
+            </Button>
+          </div>
           {review.isSuccess ? (
             <FlowNotice tone="success" title="Recommendation submitted">
               Redirecting to pending list…{" "}
