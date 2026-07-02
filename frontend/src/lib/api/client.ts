@@ -1,8 +1,13 @@
 import type {
   ActivityRecord,
   ApiUser,
+  ConversationMessageRecord,
+  ConversationRecord,
   FormRecord,
   FormReviewDecision,
+  MentionRecord,
+  MessageableUser,
+  PokeRecord,
   TicketRecord,
   TicketStatus,
 } from "./types";
@@ -177,6 +182,57 @@ export const api = {
       undefined,
       "admin",
     ),
+
+  listMessageableUsers: (slot?: PortalSlot) =>
+    apiFetch<{ users: MessageableUser[] }>("/api/messages/users", undefined, slot),
+  listConversations: (slot?: PortalSlot) =>
+    apiFetch<{ items: ConversationRecord[] }>("/api/messages/conversations", undefined, slot),
+  getTicketConversation: (ticketId: string, slot?: PortalSlot) =>
+    apiFetch<{ conversation: ConversationRecord }>(
+      `/api/messages/conversations/ticket/${ticketId}`,
+      undefined,
+      slot,
+    ),
+  listMentionableUsers: (conversationId: string, slot?: PortalSlot) =>
+    apiFetch<{ users: MessageableUser[] }>(
+      `/api/messages/conversations/${conversationId}/mentionable`,
+      undefined,
+      slot,
+    ),
+  startDirectConversation: (userId: string, slot?: PortalSlot) =>
+    apiFetch<{ conversation: ConversationRecord }>(
+      "/api/messages/conversations/direct",
+      { method: "POST", body: JSON.stringify({ userId }) },
+      slot,
+    ),
+  listConversationMessages: (conversationId: string, slot?: PortalSlot) =>
+    apiFetch<{ items: ConversationMessageRecord[] }>(
+      `/api/messages/conversations/${conversationId}/messages`,
+      undefined,
+      slot,
+    ),
+  postConversationMessage: (
+    conversationId: string,
+    body: string,
+    slot?: PortalSlot,
+    mentionIds?: string[],
+  ) =>
+    apiFetch<{ message: ConversationMessageRecord }>(
+      `/api/messages/conversations/${conversationId}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({ body, mentionIds: mentionIds ?? [] }),
+      },
+      slot,
+    ),
+  pokeUser: (userId: string, slot?: PortalSlot) =>
+    apiFetch<{ poke: PokeRecord }>(
+      "/api/messages/poke",
+      { method: "POST", body: JSON.stringify({ userId }) },
+      slot,
+    ),
+  listRecentPokes: (slot?: PortalSlot) =>
+    apiFetch<{ items: PokeRecord[] }>("/api/messages/pokes/recent", undefined, slot),
 
   uploadFile: (file: File) => {
     const fd = new FormData();

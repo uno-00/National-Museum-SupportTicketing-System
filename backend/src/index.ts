@@ -2,11 +2,13 @@ import http from "node:http";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { connectDb } from "./db.js";
+import { initRealtime } from "./realtime/socket.js";
 
 async function main() {
   await connectDb();
   const app = createApp();
   const server = http.createServer(app);
+  initRealtime(server);
 
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {

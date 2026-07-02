@@ -1,15 +1,20 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   BarChart3,
   ClipboardCheck,
   FilePenLine,
   FileStack,
   LayoutDashboard,
+  MessageCircle,
   Ticket,
   UserCheck,
 } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { useMessageNotifications } from "@/hooks/use-message-notifications";
+import { useMessageRealtime } from "@/hooks/use-message-realtime";
+import { usePokeNotifications } from "@/hooks/use-poke-notifications";
 import { api } from "@/lib/api/client";
 import { adminApprovalNotifications } from "@/lib/notifications";
 import { ensurePortalRole } from "@/lib/portal-guard";
@@ -19,6 +24,7 @@ import {
   ADMIN_ASSIGNED,
   ADMIN_DASHBOARD,
   ADMIN_FORMS,
+  ADMIN_MESSAGES,
   ADMIN_MY_FORMS,
   ADMIN_REPORTS,
   ADMIN_REQUESTS,
@@ -38,6 +44,9 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const { canQuery } = useAdminSession();
+  useMessageRealtime("admin");
+  const pokeNotifications = usePokeNotifications("admin", canQuery);
+  const messageNotifications = useMessageNotifications("admin", canQuery);
   const { data: tickets, isLoading: notificationsLoading } = useQuery({
     queryKey: ["admin-tickets-pending"],
     queryFn: () => api.listTickets({ status: "pending_approval" }, "admin"),
@@ -48,7 +57,14 @@ function AdminLayout() {
     staleTime: 0,
   });
 
-  const notifications = adminApprovalNotifications(tickets?.items ?? []);
+  const notifications = useMemo(
+    () => [
+      ...messageNotifications,
+      ...pokeNotifications,
+      ...adminApprovalNotifications(tickets?.items ?? []),
+    ],
+    [messageNotifications, pokeNotifications, tickets?.items],
+  );
 
   return (
     <DashboardShell
@@ -57,19 +73,34 @@ function AdminLayout() {
       notificationsLoading={notificationsLoading}
       notificationsViewAllTo={ADMIN_APPROVALS}
       notificationsEmptyMessage="No pending client requests"
-      nav={[
-        { to: ADMIN_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
-        { to: ADMIN_FORMS, label: "Form Builder", icon: FilePenLine },
-        { to: ADMIN_MY_FORMS, label: "My Forms", icon: FileStack },
+      navSections={[
         {
-          to: ADMIN_APPROVALS,
-          label: "Approvals",
-          icon: ClipboardCheck,
-          badge: tickets?.pendingCount ?? notifications.length,
+          items: [
+            { to: ADMIN_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
+            { to: ADMIN_REPORTS, label: "Reports", icon: BarChart3 },
+            { to: ADMIN_MESSAGES, label: "Messages", icon: MessageCircle },
+          ],
         },
-        { to: ADMIN_REQUESTS, label: "Request Management", icon: Ticket },
-        { to: ADMIN_ASSIGNED, label: "My Assignments", icon: UserCheck },
-        { to: ADMIN_REPORTS, label: "Reports", icon: BarChart3 },
+        {
+          title: "Forms",
+          items: [
+            { to: ADMIN_FORMS, label: "Form Builder", icon: FilePenLine },
+            { to: ADMIN_MY_FORMS, label: "My Forms", icon: FileStack },
+          ],
+        },
+        {
+          title: "Requests",
+          items: [
+            {
+              to: ADMIN_APPROVALS,
+              label: "Approvals",
+              icon: ClipboardCheck,
+              badge: tickets?.pendingCount ?? notifications.length,
+            },
+            { to: ADMIN_REQUESTS, label: "Request Mgmt", icon: Ticket },
+            { to: ADMIN_ASSIGNED, label: "My Assignments", icon: UserCheck },
+          ],
+        },
       ]}
     >
       <Outlet />

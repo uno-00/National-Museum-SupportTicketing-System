@@ -51,7 +51,7 @@ export function UnifiedLoginPage() {
             <div className="mb-5 text-center">
               <span className="login-eyebrow">TARF System</span>
               <h1 className="login-title mt-2 text-balance text-lg font-semibold tracking-tight">
-                Sign in
+                Log in
               </h1>
             </div>
 

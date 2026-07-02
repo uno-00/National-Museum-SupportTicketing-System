@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { MessageCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api/client";
 import type { TicketStatus } from "@/lib/api/types";
-import { ADMIN_APPROVALS, ADMIN_DASHBOARD, ADMIN_REQUESTS } from "@/lib/navigation";
+import { ADMIN_APPROVALS, ADMIN_DASHBOARD, ADMIN_MESSAGES, ADMIN_REQUESTS } from "@/lib/navigation";
 import { useAdminSession } from "@/lib/use-portal-session";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +129,16 @@ function TicketDetailPage() {
       <WorkspacePageHeader
         title={ticket.ticketNumber}
         description={ticket.title}
+        actions={
+          ticket.status !== "closed" ? (
+            <Link to={ADMIN_MESSAGES} search={{ ticket: ticketId }}>
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <MessageCircle className="h-4 w-4" />
+                Request messages
+              </Button>
+            </Link>
+          ) : null
+        }
         meta={
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-muted-foreground">Status:</span>

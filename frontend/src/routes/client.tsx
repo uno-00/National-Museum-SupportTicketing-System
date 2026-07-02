@@ -1,11 +1,15 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Inbox, LayoutDashboard, MessageSquare } from "lucide-react";
+import { useMemo } from "react";
+import { Inbox, LayoutDashboard, MessageCircle, MessageSquare } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { useMessageNotifications } from "@/hooks/use-message-notifications";
+import { useMessageRealtime } from "@/hooks/use-message-realtime";
+import { usePokeNotifications } from "@/hooks/use-poke-notifications";
 import { api } from "@/lib/api/client";
 import { ensurePortalRole } from "@/lib/portal-guard";
 import { clientTicketNotifications } from "@/lib/notifications";
-import { CLIENT_DASHBOARD, CLIENT_FEEDBACK, CLIENT_REQUESTS, isClientRole } from "@/lib/navigation";
+import { CLIENT_DASHBOARD, CLIENT_FEEDBACK, CLIENT_MESSAGES, CLIENT_REQUESTS, isClientRole } from "@/lib/navigation";
 import { countTicketsNeedingFeedback } from "@/lib/ticket-workflow";
 
 export const Route = createFileRoute("/client")({
@@ -20,6 +24,9 @@ export const Route = createFileRoute("/client")({
 });
 
 function ClientLayout() {
+  useMessageRealtime("client");
+  const pokeNotifications = usePokeNotifications("client");
+  const messageNotifications = useMessageNotifications("client");
   const { data: tickets, isLoading: notificationsLoading } = useQuery({
     queryKey: ["my-tickets"],
     queryFn: () => api.myTickets(),
@@ -29,7 +36,10 @@ function ClientLayout() {
     staleTime: 0,
   });
 
-  const notifications = clientTicketNotifications(tickets?.items ?? []);
+  const notifications = useMemo(
+    () => [...messageNotifications, ...pokeNotifications, ...clientTicketNotifications(tickets?.items ?? [])],
+    [messageNotifications, pokeNotifications, tickets?.items],
+  );
   const actionCount = notifications.length;
   const feedbackCount = countTicketsNeedingFeedback(tickets?.items ?? []);
 
@@ -40,14 +50,24 @@ function ClientLayout() {
       notificationsLoading={notificationsLoading}
       notificationsViewAllTo={CLIENT_REQUESTS}
       notificationsEmptyMessage="No updates on your requests"
-      nav={[
-        { to: CLIENT_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
-        { to: CLIENT_REQUESTS, label: "My Requests", icon: Inbox, badge: actionCount || undefined },
+      navSections={[
         {
-          to: CLIENT_FEEDBACK,
-          label: "Service Feedback",
-          icon: MessageSquare,
-          badge: feedbackCount || undefined,
+          items: [
+            { to: CLIENT_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
+            {
+              to: CLIENT_REQUESTS,
+              label: "My Requests",
+              icon: Inbox,
+              badge: actionCount || undefined,
+            },
+            { to: CLIENT_MESSAGES, label: "Messages", icon: MessageCircle },
+            {
+              to: CLIENT_FEEDBACK,
+              label: "Service Feedback",
+              icon: MessageSquare,
+              badge: feedbackCount || undefined,
+            },
+          ],
         },
       ]}
     >

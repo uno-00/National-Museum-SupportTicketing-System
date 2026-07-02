@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, LogOut, Menu, X, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NmpLogo } from "@/components/layout/NmpLogo";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -12,9 +12,17 @@ import { cn } from "@/lib/utils";
 
 export type NavItem = { to: string; label: string; badge?: number; icon?: LucideIcon };
 
+export type NavSection = {
+  title?: string;
+  items: NavItem[];
+};
+
 type DashboardShellProps = {
   portalTitle: string;
-  nav: NavItem[];
+  /** Flat list — rendered as one section (client / records). */
+  nav?: NavItem[];
+  /** Grouped sections with optional collapsible headers (admin). */
+  navSections?: NavSection[];
   notifications?: NotificationItem[];
   notificationsLoading?: boolean;
   notificationsViewAllTo?: string;
@@ -31,9 +39,18 @@ function userInitials(name?: string, email?: string) {
     .join("");
 }
 
+function sectionKey(section: NavSection, index: number) {
+  return section.title ?? `section-${index}`;
+}
+
+function itemIsActive(pathname: string, to: string) {
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
 export function DashboardShell({
   portalTitle,
   nav,
+  navSections,
   notifications = [],
   notificationsLoading,
   notificationsViewAllTo,
@@ -47,7 +64,119 @@ export function DashboardShell({
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const sections = useMemo(
+    () => navSections ?? (nav ? [{ items: nav }] : []),
+    [nav, navSections],
+  );
+
+  useEffect(() => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      sections.forEach((section, index) => {
+        if (!section.title) return;
+        const key = sectionKey(section, index);
+        const hasActive = section.items.some((item) => itemIsActive(pathname, item.to));
+        if (hasActive && next[key] === true) {
+          next[key] = false;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [pathname, sections]);
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [key]: prev[key] !== true }));
+  };
+
+  const isSectionOpen = (key: string, section: NavSection) => {
+    if (!section.title) return true;
+    return collapsedSections[key] !== true;
+  };
+
+  const renderNavItem = (item: NavItem) => {
+    const active = itemIsActive(pathname, item.to);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.to}
+        to={item.to}
+        className={cn(
+          "group flex items-center justify-between gap-2 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all",
+          active
+            ? "sidebar-nav-active"
+            : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          {Icon ? (
+            <span
+              className={cn(
+                "sidebar-nav-icon",
+                active ? "sidebar-nav-icon-active" : "sidebar-nav-icon-idle",
+                !active && "group-hover:bg-muted group-hover:text-foreground",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+          ) : null}
+          <span className="truncate">{item.label}</span>
+        </span>
+        {item.badge ? (
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+              active ? "bg-maroon/15 text-maroon" : "bg-destructive text-white",
+            )}
+          >
+            {item.badge > 9 ? "9+" : item.badge}
+          </span>
+        ) : null}
+      </Link>
+    );
+  };
+
+  const renderNavSections = () =>
+    sections.map((section, index) => {
+      const key = sectionKey(section, index);
+      const open = isSectionOpen(key, section);
+      const hasTitledGroup = Boolean(section.title) && section.items.length > 0;
+
+      if (!hasTitledGroup) {
+        return (
+          <div key={key} className="space-y-1">
+            {index === 0 && !section.title ? (
+              <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Menu
+              </p>
+            ) : null}
+            {section.items.map(renderNavItem)}
+          </div>
+        );
+      }
+
+      return (
+        <div key={key} className="sidebar-nav-section">
+          <button
+            type="button"
+            onClick={() => toggleSection(key)}
+            className="sidebar-nav-section-toggle"
+            aria-expanded={open}
+          >
+            <span>{section.title}</span>
+            <ChevronDown
+              className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", !open && "-rotate-90")}
+              aria-hidden
+            />
+          </button>
+          {open ? <div className="sidebar-nav-section-items">{section.items.map(renderNavItem)}</div> : null}
+        </div>
+      );
+    });
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -90,51 +219,8 @@ export function DashboardShell({
         <div className="sidebar-brand-divider" aria-hidden />
       </div>
 
-      <nav className="workspace-scroll flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Menu
-        </p>
-        {nav.map((item) => {
-          const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "group flex items-center justify-between gap-2 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "sidebar-nav-active"
-                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-2.5">
-                {Icon ? (
-                  <span
-                    className={cn(
-                      "sidebar-nav-icon",
-                      active ? "sidebar-nav-icon-active" : "sidebar-nav-icon-idle",
-                      !active && "group-hover:bg-muted group-hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                ) : null}
-                <span className="truncate">{item.label}</span>
-              </span>
-              {item.badge ? (
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    active ? "bg-maroon/15 text-maroon" : "bg-destructive text-white",
-                  )}
-                >
-                  {item.badge > 9 ? "9+" : item.badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
+      <nav className="workspace-scroll flex-1 space-y-3 overflow-y-auto px-3 py-4">
+        {renderNavSections()}
       </nav>
 
       <div className="sidebar-footer hidden lg:block">
@@ -145,7 +231,7 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-64 shrink-0 border-r border-border/70 bg-gradient-to-b from-card via-card to-card/95 shadow-[4px_0_24px_color-mix(in_oklab,var(--maroon-deep)_4%,transparent)] lg:block">
+      <aside className="workspace-sidebar hidden w-[17rem] shrink-0 lg:block">
         {sidebar}
       </aside>
 
@@ -157,7 +243,7 @@ export function DashboardShell({
             aria-label="Close menu"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85vw] border-r border-border shadow-2xl">
+          <aside className="workspace-sidebar relative h-full w-72 max-w-[85vw] border-r border-border shadow-2xl">
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
@@ -177,7 +263,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted lg:hidden"
+              className="header-icon-btn text-muted-foreground lg:hidden"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -201,9 +287,9 @@ export function DashboardShell({
               <button
                 type="button"
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-2.5 py-1.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-maroon/25 hover:bg-muted/50 hover:shadow-md"
+                className="profile-trigger flex items-center gap-2 px-2.5 py-1.5 text-sm"
               >
-                <span className="profile-avatar flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[10px] font-bold text-primary ring-2 ring-primary/15">
+                <span className="profile-avatar flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-primary/15">
                   {userInitials(user?.name, user?.email)}
                 </span>
                 <span className="max-w-[8rem] truncate">{user?.name}</span>

@@ -7,6 +7,7 @@ export type NotificationItem = {
   time?: string;
   to: string;
   params?: Record<string, string>;
+  search?: Record<string, string>;
 };
 export function formatNotificationTime(iso?: string): string {
   if (!iso) return "";

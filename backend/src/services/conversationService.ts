@@ -1,0 +1,408 @@
+import type { AuthUser } from "../middleware/auth.js";
+import { Conversation } from "../models/Conversation.js";
+import { ConversationMessage } from "../models/ConversationMessage.js";
+import { Ticket } from "../models/Ticket.js";
+import { User } from "../models/User.js";
+import {
+  emitConversationUpdate,
+  emitMention,
+  emitNewMessage,
+  type RealtimeMentionPayload,
+} from "../realtime/socket.js";
+import { AppError } from "../utils/errors.js";
+import {
+  canAccessTicketConversation,
+  getTicketThreadMentionableUserIds,
+  syncTicketConversationParticipants,
+  ticketConversationListFilter,
+} from "./ticketConversationService.js";
+
+const GLOBAL_TITLE = "NMP Team Chat";
+
+function directKeyFor(a: string, b: string) {
+  return [a, b].sort().join(":");
+}
+
+function serializeUser(u: {
+  _id: { toString(): string };
+  name: string;
+  email: string;
+  role: string;
+  division: string;
+}) {
+  return {
+    id: u._id.toString(),
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    division: u.division,
+  };
+}
+
+function serializeMessage(doc: {
+  _id: { toString(): string };
+  conversationId: { toString(): string };
+  senderId: { toString(): string };
+  senderName: string;
+  senderRole: string;
+  body: string;
+  mentions?: Array<{ userId: { toString(): string }; userName: string }>;
+  isSystem?: boolean;
+  createdAt: Date;
+}) {
+  return {
+    _id: doc._id.toString(),
+    conversationId: doc.conversationId.toString(),
+    senderId: doc.senderId.toString(),
+    senderName: doc.senderName,
+    senderRole: doc.senderRole,
+    body: doc.body,
+    mentions: (doc.mentions ?? []).map((m) => ({
+      userId: m.userId.toString(),
+      userName: m.userName,
+    })),
+    isSystem: Boolean(doc.isSystem),
+    createdAt: doc.createdAt.toISOString(),
+  };
+}
+
+export async function ensureGlobalConversation() {
+  let conv = await Conversation.findOne({ isGlobal: true });
+  if (!conv) {
+    conv = await Conversation.create({
+      type: "group",
+      title: GLOBAL_TITLE,
+      isGlobal: true,
+      participantIds: [],
+    });
+  }
+  return conv;
+}
+
+async function assertConversationAccess(
+  user: AuthUser,
+  conversation: {
+    isGlobal?: boolean;
+    isClosed?: boolean;
+    ticketId?: { toString(): string } | null;
+    participantIds: Array<{ toString(): string }>;
+  },
+) {
+  if (conversation.isGlobal) return;
+  if (conversation.isClosed) throw new AppError(404, "Conversation is closed");
+
+  if (conversation.ticketId) {
+    const allowed = await canAccessTicketConversation(user, conversation.ticketId.toString());
+    if (allowed) return;
+    throw new AppError(403, "You do not have access to this conversation");
+  }
+
+  const isParticipant = conversation.participantIds.some((id) => id.toString() === user.id);
+  if (!isParticipant) throw new AppError(403, "You do not have access to this conversation");
+}
+
+async function getMentionableUserIds(conversation: {
+  isGlobal?: boolean;
+  isClosed?: boolean;
+  ticketId?: { toString(): string } | null;
+  participantIds: Array<{ toString(): string }>;
+}) {
+  if (conversation.isClosed) return [];
+  if (conversation.isGlobal) {
+    const users = await User.find({ active: true }).select("_id").lean();
+    return users.map((u) => u._id.toString());
+  }
+
+  const ids = new Set(conversation.participantIds.map((id) => id.toString()));
+
+  if (conversation.ticketId) {
+    return getTicketThreadMentionableUserIds(conversation.ticketId.toString());
+  }
+
+  return [...ids];
+}
+
+export async function listMessageableUsers(user: AuthUser) {
+  const users = await User.find({ active: true, _id: { $ne: user.id } })
+    .select("name email role division")
+    .sort({ role: 1, name: 1 })
+    .lean();
+
+  return users.map((u) => serializeUser(u as never));
+}
+
+export async function listMentionableUsers(user: AuthUser, conversationId: string) {
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) throw new AppError(404, "Conversation not found");
+  await assertConversationAccess(user, conversation);
+
+  const ids = await getMentionableUserIds(conversation);
+  const users = await User.find({
+    _id: { $in: ids.filter((id) => id !== user.id) },
+    active: true,
+  })
+    .select("name email role division")
+    .sort({ name: 1 })
+    .lean();
+
+  return users.map((u) => serializeUser(u as never));
+}
+
+export async function listConversations(user: AuthUser) {
+  await ensureGlobalConversation();
+
+  if (user.role === "user") {
+    const myTickets = await Ticket.find({
+      creatorId: user.id,
+      status: { $nin: ["rejected"] },
+    })
+      .select("_id")
+      .lean();
+    await Promise.all(myTickets.map((t) => syncTicketConversationParticipants(t._id.toString())));
+  } else if (user.role === "admin" || user.role === "record_management") {
+    const recentTickets = await Ticket.find({ status: { $nin: ["rejected"] } })
+      .sort({ updatedAt: -1 })
+      .limit(80)
+      .select("_id")
+      .lean();
+    await Promise.all(
+      recentTickets.map((t) => syncTicketConversationParticipants(t._id.toString())),
+    );
+  }
+
+  const conversations = await Conversation.find({
+    $or: [{ isGlobal: true }, { participantIds: user.id }, ticketConversationListFilter(user)],
+  })
+    .sort({ isGlobal: -1, lastMessageAt: -1, updatedAt: -1 })
+    .lean();
+
+  const ticketIds = conversations
+    .filter((c) => c.ticketId)
+    .map((c) => c.ticketId!.toString());
+
+  const tickets = ticketIds.length
+    ? await Ticket.find({ _id: { $in: ticketIds } })
+        .select("ticketNumber title creatorName creatorId division status assignedTo")
+        .populate("assignedTo", "name")
+        .lean()
+    : [];
+  const ticketMap = new Map(tickets.map((t) => [t._id.toString(), t]));
+
+  const visibleConversations =
+    user.role === "user"
+      ? conversations.filter((conv) => {
+          if (conv.isClosed) return false;
+          if (!conv.ticketId) return true;
+          const ticket = ticketMap.get(conv.ticketId.toString());
+          return ticket?.creatorId?.toString() === user.id;
+        })
+      : conversations.filter((conv) => !conv.isClosed);
+
+  const otherUserIds = new Set<string>();
+  for (const conv of visibleConversations) {
+    if (conv.type === "direct") {
+      for (const pid of conv.participantIds) {
+        const id = pid.toString();
+        if (id !== user.id) otherUserIds.add(id);
+      }
+    }
+  }
+
+  const others = otherUserIds.size
+    ? await User.find({ _id: { $in: [...otherUserIds] } })
+        .select("name email role division")
+        .lean()
+    : [];
+  const otherMap = new Map(others.map((u) => [u._id.toString(), serializeUser(u as never)]));
+
+  return visibleConversations.map((conv) => {
+    const base = {
+      _id: conv._id.toString(),
+      type: conv.type as "direct" | "group" | "ticket",
+      title: conv.title,
+      isGlobal: Boolean(conv.isGlobal),
+      lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
+      lastMessagePreview: conv.lastMessagePreview ?? "",
+      lastSenderName: conv.lastSenderName ?? "",
+      ticketId: conv.ticketId?.toString() ?? null,
+    };
+
+    if (conv.isGlobal) {
+      return { ...base, title: GLOBAL_TITLE, subtitle: "Admin, Records & Clients" };
+    }
+
+    if (conv.ticketId) {
+      const ticket = ticketMap.get(conv.ticketId.toString());
+      const assignees = (ticket?.assignedTo as Array<{ name: string }> | undefined) ?? [];
+      return {
+        ...base,
+        type: "ticket" as const,
+        title: ticket?.ticketNumber ?? conv.title,
+        subtitle: ticket
+          ? `Client: ${ticket.creatorName} · ICT: ${assignees.length ? assignees.map((a) => a.name).join(", ") : "Awaiting assignment"}`
+          : "Request thread",
+        threadParticipants: "Admin, Records, client & assigned ICT",
+        ticketStatus: ticket?.status ?? null,
+        ticketTitle: ticket?.title ?? "",
+      };
+    }
+
+    if (conv.type === "direct") {
+      const otherId = conv.participantIds.map((id) => id.toString()).find((id) => id !== user.id);
+      const other = otherId ? otherMap.get(otherId) : null;
+      return {
+        ...base,
+        title: other?.name ?? "Direct chat",
+        subtitle: other
+          ? `${other.role === "admin" ? "Admin" : other.role === "record_management" ? "Records" : "Client"} · ${other.division}`
+          : "",
+        otherUser: other,
+      };
+    }
+
+    return { ...base, subtitle: `${conv.participantIds.length} members` };
+  });
+}
+
+export async function getOrCreateDirectConversation(user: AuthUser, otherUserId: string) {
+  if (otherUserId === user.id) throw new AppError(400, "Cannot start a chat with yourself");
+
+  const other = await User.findOne({ _id: otherUserId, active: true });
+  if (!other) throw new AppError(404, "User not found");
+
+  const key = directKeyFor(user.id, otherUserId);
+  let conv = await Conversation.findOne({ directKey: key });
+  if (!conv) {
+    conv = await Conversation.create({
+      type: "direct",
+      participantIds: [user.id, otherUserId],
+      directKey: key,
+    });
+  }
+
+  const otherUser = serializeUser(other as never);
+  return {
+    conversation: {
+      _id: conv._id.toString(),
+      type: "direct" as const,
+      title: otherUser.name,
+      subtitle: `${otherUser.role === "admin" ? "Admin" : otherUser.role === "record_management" ? "Records" : "Client"} · ${otherUser.division}`,
+      isGlobal: false,
+      ticketId: null,
+      otherUser,
+    },
+  };
+}
+
+export async function getTicketConversation(user: AuthUser, ticketId: string) {
+  await syncTicketConversationParticipants(ticketId);
+  const conv = await Conversation.findOne({ ticketId }).lean();
+  if (!conv) throw new AppError(404, "Conversation not found");
+  if (conv.isClosed) throw new AppError(404, "Conversation is closed");
+  await assertConversationAccess(user, conv);
+
+  const ticket = await Ticket.findById(ticketId)
+    .select("ticketNumber title creatorName status assignedTo")
+    .populate("assignedTo", "name")
+    .lean();
+
+  const assignees = (ticket?.assignedTo as Array<{ name: string }> | undefined) ?? [];
+
+  return {
+    conversation: {
+      _id: conv._id.toString(),
+      type: "ticket" as const,
+      title: ticket?.ticketNumber ?? conv.title,
+      subtitle: ticket
+        ? `Client: ${ticket.creatorName} · ICT: ${assignees.length ? assignees.map((a) => a.name).join(", ") : "Awaiting assignment"}`
+        : "Request thread",
+      threadParticipants: "Admin, Records, client & assigned ICT",
+      isGlobal: false,
+      ticketId,
+      ticketStatus: ticket?.status ?? null,
+      ticketTitle: ticket?.title ?? "",
+    },
+  };
+}
+
+export async function listConversationMessages(user: AuthUser, conversationId: string) {
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) throw new AppError(404, "Conversation not found");
+  await assertConversationAccess(user, conversation);
+
+  const messages = await ConversationMessage.find({ conversationId })
+    .sort({ createdAt: 1 })
+    .lean();
+
+  return messages.map((m) => serializeMessage(m as never));
+}
+
+export async function postConversationMessage(
+  user: AuthUser,
+  conversationId: string,
+  body: string,
+  mentionIds: string[] = [],
+) {
+  const trimmed = body.trim();
+  if (!trimmed) throw new AppError(400, "Message cannot be empty");
+  if (trimmed.length > 4000) throw new AppError(400, "Message is too long (max 4000 characters)");
+
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) throw new AppError(404, "Conversation not found");
+  await assertConversationAccess(user, conversation);
+  if (conversation.isClosed) throw new AppError(400, "Conversation is already closed");
+
+  const mentionableIds = new Set(await getMentionableUserIds(conversation));
+  const validMentionIds = [...new Set(mentionIds)].filter(
+    (id) => id !== user.id && mentionableIds.has(id),
+  );
+
+  const mentionUsers = validMentionIds.length
+    ? await User.find({ _id: { $in: validMentionIds } }).select("name").lean()
+    : [];
+
+  const mentions = mentionUsers.map((u) => ({
+    userId: u._id,
+    userName: u.name,
+  }));
+
+  const message = await ConversationMessage.create({
+    conversationId,
+    senderId: user.id,
+    senderName: user.name,
+    senderRole: user.role,
+    body: trimmed,
+    mentions,
+  });
+
+  conversation.lastMessageAt = message.createdAt;
+  conversation.lastMessagePreview = trimmed.length > 120 ? `${trimmed.slice(0, 117)}…` : trimmed;
+  conversation.lastSenderName = user.name;
+  await conversation.save();
+
+  const serialized = serializeMessage(message);
+  emitNewMessage({ conversationId, message: serialized });
+  emitConversationUpdate({
+    conversationId,
+    lastMessageAt: message.createdAt.toISOString(),
+    lastMessagePreview: conversation.lastMessagePreview,
+    lastSenderName: conversation.lastSenderName,
+  });
+
+  for (const mention of serialized.mentions) {
+    const payload: RealtimeMentionPayload = {
+      _id: `${serialized._id}:${mention.userId}`,
+      conversationId,
+      messageId: serialized._id,
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserRole: user.role,
+      toUserId: mention.userId,
+      preview: trimmed.length > 120 ? `${trimmed.slice(0, 117)}…` : trimmed,
+      createdAt: serialized.createdAt,
+    };
+    emitMention(mention.userId, payload);
+  }
+
+  return serialized;
+}

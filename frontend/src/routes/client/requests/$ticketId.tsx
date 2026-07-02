@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { CheckCircle2, Loader2, MessageCircle, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { ClientFeedbackPanel } from "@/components/client/ClientFeedbackPanel";
 import {
@@ -17,7 +17,7 @@ import {
 import { TicketRequestDetails } from "@/components/tickets/TicketRequestDetails";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
-import { CLIENT_FEEDBACK, CLIENT_REQUESTS } from "@/lib/navigation";
+import { CLIENT_FEEDBACK, CLIENT_MESSAGES, CLIENT_REQUESTS } from "@/lib/navigation";
 import { getClientFeedbackUrl } from "@/lib/feedback-config";
 import {
   ticketCanMarkComplete,
@@ -102,6 +102,16 @@ function TicketTrackPage() {
         title={ticket.ticketNumber}
         description={ticket.title || ticket.formTitle}
         meta={<StatusBadge status={activeTicket?.status ?? ticket.status} />}
+        actions={
+          activeTicket?.status !== "closed" ? (
+            <Link to={CLIENT_MESSAGES} search={{ ticket: ticketId }}>
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <MessageCircle className="h-4 w-4" />
+                Request messages
+              </Button>
+            </Link>
+          ) : null
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

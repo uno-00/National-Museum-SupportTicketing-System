@@ -7,16 +7,19 @@ export const ADMIN_APPROVALS = "/admin/approvals";
 export const ADMIN_REQUESTS = "/admin/requests";
 export const ADMIN_ASSIGNED = "/admin/assigned";
 export const ADMIN_REPORTS = "/admin/reports";
+export const ADMIN_MESSAGES = "/admin/messages";
 
 export const RECORDS_DASHBOARD = "/records/dashboard";
 export const RECORDS_PENDING = "/records/pending";
 export const RECORDS_PUBLISHED = "/records/published";
 export const RECORDS_ACTIVITY = "/records/activity";
+export const RECORDS_MESSAGES = "/records/messages";
 
 export const CLIENT_DASHBOARD = "/client/dashboard";
 export const CLIENT_SUBMIT = "/client/submit";
 export const CLIENT_REQUESTS = "/client/requests";
 export const CLIENT_FEEDBACK = "/client/feedback";
+export const CLIENT_MESSAGES = "/client/messages";
 
 export function isAdminRole(role: string | undefined) {
   return role === "admin";

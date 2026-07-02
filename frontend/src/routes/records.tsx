@@ -1,7 +1,11 @@
 import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Clock, History, LayoutDashboard } from "lucide-react";
+import { useMemo } from "react";
+import { BookOpen, Clock, History, LayoutDashboard, MessageCircle } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { useMessageNotifications } from "@/hooks/use-message-notifications";
+import { useMessageRealtime } from "@/hooks/use-message-realtime";
+import { usePokeNotifications } from "@/hooks/use-poke-notifications";
 import { PortalGateCard } from "@/components/layout/workspace-ui";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
@@ -13,6 +17,7 @@ import {
   LOGIN,
   RECORDS_ACTIVITY,
   RECORDS_DASHBOARD,
+  RECORDS_MESSAGES,
   RECORDS_PENDING,
   RECORDS_PUBLISHED,
 } from "@/lib/navigation";
@@ -30,6 +35,9 @@ export const Route = createFileRoute("/records")({
 
 function RecordsLayout() {
   const { user, sessionReady, logout, canQuery } = useRecordsSession();
+  useMessageRealtime("records");
+  const pokeNotifications = usePokeNotifications("records", canQuery);
+  const messageNotifications = useMessageNotifications("records", canQuery);
 
   const {
     data,
@@ -46,8 +54,17 @@ function RecordsLayout() {
   });
 
   const pendingCount = canQuery && !isError ? data?.pendingCount : undefined;
-  const notifications =
-    canQuery && !isError ? recordsPendingNotifications(data?.recentPending ?? []) : [];
+  const notifications = useMemo(
+    () =>
+      canQuery && !isError
+        ? [
+            ...messageNotifications,
+            ...pokeNotifications,
+            ...recordsPendingNotifications(data?.recentPending ?? []),
+          ]
+        : [...messageNotifications, ...pokeNotifications],
+    [canQuery, isError, messageNotifications, pokeNotifications, data?.recentPending],
+  );
 
   if (sessionReady && user && !isRecordsRole(user.role)) {
     return (
@@ -55,7 +72,7 @@ function RecordsLayout() {
         title="Wrong account for Records"
         description={
           <>
-            No Records session found. Sign in at <strong>{LOGIN}</strong> with{" "}
+            No Records session found. Log in at <strong>{LOGIN}</strong> with{" "}
             <strong>records@nmp.gov.ph</strong>.
           </>
         }
@@ -77,11 +94,25 @@ function RecordsLayout() {
       notificationsLoading={notificationsLoading && canQuery}
       notificationsViewAllTo={RECORDS_PENDING}
       notificationsEmptyMessage="No forms waiting for review"
-      nav={[
-        { to: RECORDS_DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
-        { to: RECORDS_PENDING, label: "Pending Forms", icon: Clock, badge: pendingCount },
-        { to: RECORDS_PUBLISHED, label: "Published Forms", icon: BookOpen },
-        { to: RECORDS_ACTIVITY, label: "Activity Logs", icon: History },
+      navSections={[
+        {
+          items: [{ to: RECORDS_DASHBOARD, label: "Dashboard", icon: LayoutDashboard }],
+        },
+        {
+          title: "Forms",
+          items: [
+            { to: RECORDS_PENDING, label: "Pending Forms", icon: Clock, badge: pendingCount },
+            { to: RECORDS_PUBLISHED, label: "Published Forms", icon: BookOpen },
+          ],
+        },
+        {
+          title: "Requests",
+          items: [{ to: RECORDS_MESSAGES, label: "Messages", icon: MessageCircle }],
+        },
+        {
+          title: "System",
+          items: [{ to: RECORDS_ACTIVITY, label: "Activity Logs", icon: History }],
+        },
       ]}
     >
       <Outlet />

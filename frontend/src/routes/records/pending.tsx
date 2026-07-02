@@ -40,8 +40,8 @@ function PendingFormsPage() {
   const errorMessage =
     error instanceof ApiError && error.status === 403
       ? user
-        ? `Records session missing or expired. Sign in at ${LOGIN}.`
-        : `Access denied — sign in with your Records account at ${LOGIN}.`
+        ? `Records session missing or expired. Log in at ${LOGIN}.`
+        : `Access denied — log in with your Records account at ${LOGIN}.`
       : error instanceof Error
         ? error.message
         : "Could not load pending forms.";

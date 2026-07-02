@@ -53,9 +53,7 @@ export function WorkspacePageHeader({
         {meta ? <div className="mt-3">{meta}</div> : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/90 p-1.5 shadow-sm backdrop-blur-sm ring-1 ring-white/60">
-          {actions}
-        </div>
+        <div className="action-tray shrink-0">{actions}</div>
       ) : null}
     </div>
   );
@@ -214,7 +212,7 @@ export function DashboardHero({
           {meta ? <div className="mt-3">{meta}</div> : null}
         </div>
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+          <div className="action-tray shrink-0">{actions}</div>
         ) : null}
       </div>
     </div>

@@ -17,16 +17,19 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsPublishedRouteImport } from './routes/records/published'
 import { Route as RecordsPendingRouteImport } from './routes/records/pending'
+import { Route as RecordsMessagesRouteImport } from './routes/records/messages'
 import { Route as RecordsLoginRouteImport } from './routes/records/login'
 import { Route as RecordsDashboardRouteImport } from './routes/records/dashboard'
 import { Route as RecordsActivityRouteImport } from './routes/records/activity'
 import { Route as ClientSubmitRouteImport } from './routes/client/submit'
+import { Route as ClientMessagesRouteImport } from './routes/client/messages'
 import { Route as ClientLoginRouteImport } from './routes/client/login'
 import { Route as ClientFormsRouteImport } from './routes/client/forms'
 import { Route as ClientFeedbackRouteImport } from './routes/client/feedback'
 import { Route as ClientDashboardRouteImport } from './routes/client/dashboard'
 import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminMyFormsRouteImport } from './routes/admin/my-forms'
+import { Route as AdminMessagesRouteImport } from './routes/admin/messages'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminFormsRouteImport } from './routes/admin/forms'
 import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
@@ -78,6 +81,11 @@ const RecordsPendingRoute = RecordsPendingRouteImport.update({
   path: '/pending',
   getParentRoute: () => RecordsRoute,
 } as any)
+const RecordsMessagesRoute = RecordsMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => RecordsRoute,
+} as any)
 const RecordsLoginRoute = RecordsLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -96,6 +104,11 @@ const RecordsActivityRoute = RecordsActivityRouteImport.update({
 const ClientSubmitRoute = ClientSubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientMessagesRoute = ClientMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => ClientRoute,
 } as any)
 const ClientLoginRoute = ClientLoginRouteImport.update({
@@ -126,6 +139,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
 const AdminMyFormsRoute = AdminMyFormsRouteImport.update({
   id: '/my-forms',
   path: '/my-forms',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMessagesRoute = AdminMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -190,16 +208,19 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/messages': typeof AdminMessagesRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
   '/client/login': typeof ClientLoginRoute
+  '/client/messages': typeof ClientMessagesRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
   '/records/login': typeof RecordsLoginRoute
+  '/records/messages': typeof RecordsMessagesRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -220,16 +241,19 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/messages': typeof AdminMessagesRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
   '/client/login': typeof ClientLoginRoute
+  '/client/messages': typeof ClientMessagesRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
   '/records/login': typeof RecordsLoginRoute
+  '/records/messages': typeof RecordsMessagesRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -251,16 +275,19 @@ export interface FileRoutesById {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/forms': typeof AdminFormsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/messages': typeof AdminMessagesRoute
   '/admin/my-forms': typeof AdminMyFormsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/client/dashboard': typeof ClientDashboardRoute
   '/client/feedback': typeof ClientFeedbackRoute
   '/client/forms': typeof ClientFormsRoute
   '/client/login': typeof ClientLoginRoute
+  '/client/messages': typeof ClientMessagesRoute
   '/client/submit': typeof ClientSubmitRoute
   '/records/activity': typeof RecordsActivityRoute
   '/records/dashboard': typeof RecordsDashboardRoute
   '/records/login': typeof RecordsLoginRoute
+  '/records/messages': typeof RecordsMessagesRoute
   '/records/pending': typeof RecordsPendingRoute
   '/records/published': typeof RecordsPublishedRoute
   '/admin/requests/$ticketId': typeof AdminRequestsTicketIdRoute
@@ -283,16 +310,19 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/forms'
     | '/admin/login'
+    | '/admin/messages'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
     | '/client/login'
+    | '/client/messages'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
     | '/records/login'
+    | '/records/messages'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -313,16 +343,19 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/forms'
     | '/admin/login'
+    | '/admin/messages'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
     | '/client/login'
+    | '/client/messages'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
     | '/records/login'
+    | '/records/messages'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -343,16 +376,19 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/forms'
     | '/admin/login'
+    | '/admin/messages'
     | '/admin/my-forms'
     | '/admin/reports'
     | '/client/dashboard'
     | '/client/feedback'
     | '/client/forms'
     | '/client/login'
+    | '/client/messages'
     | '/client/submit'
     | '/records/activity'
     | '/records/dashboard'
     | '/records/login'
+    | '/records/messages'
     | '/records/pending'
     | '/records/published'
     | '/admin/requests/$ticketId'
@@ -430,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsPendingRouteImport
       parentRoute: typeof RecordsRoute
     }
+    '/records/messages': {
+      id: '/records/messages'
+      path: '/messages'
+      fullPath: '/records/messages'
+      preLoaderRoute: typeof RecordsMessagesRouteImport
+      parentRoute: typeof RecordsRoute
+    }
     '/records/login': {
       id: '/records/login'
       path: '/login'
@@ -456,6 +499,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/client/submit'
       preLoaderRoute: typeof ClientSubmitRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/messages': {
+      id: '/client/messages'
+      path: '/messages'
+      fullPath: '/client/messages'
+      preLoaderRoute: typeof ClientMessagesRouteImport
       parentRoute: typeof ClientRoute
     }
     '/client/login': {
@@ -498,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/my-forms'
       fullPath: '/admin/my-forms'
       preLoaderRoute: typeof AdminMyFormsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/messages': {
+      id: '/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AdminMessagesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/login': {
@@ -578,6 +635,7 @@ interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminFormsRoute: typeof AdminFormsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminMessagesRoute: typeof AdminMessagesRoute
   AdminMyFormsRoute: typeof AdminMyFormsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRequestsTicketIdRoute: typeof AdminRequestsTicketIdRoute
@@ -590,6 +648,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminFormsRoute: AdminFormsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminMessagesRoute: AdminMessagesRoute,
   AdminMyFormsRoute: AdminMyFormsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRequestsTicketIdRoute: AdminRequestsTicketIdRoute,
@@ -604,6 +663,7 @@ interface ClientRouteChildren {
   ClientFeedbackRoute: typeof ClientFeedbackRoute
   ClientFormsRoute: typeof ClientFormsRoute
   ClientLoginRoute: typeof ClientLoginRoute
+  ClientMessagesRoute: typeof ClientMessagesRoute
   ClientSubmitRoute: typeof ClientSubmitRoute
   ClientRequestsTicketIdRoute: typeof ClientRequestsTicketIdRoute
   ClientRequestsIndexRoute: typeof ClientRequestsIndexRoute
@@ -614,6 +674,7 @@ const ClientRouteChildren: ClientRouteChildren = {
   ClientFeedbackRoute: ClientFeedbackRoute,
   ClientFormsRoute: ClientFormsRoute,
   ClientLoginRoute: ClientLoginRoute,
+  ClientMessagesRoute: ClientMessagesRoute,
   ClientSubmitRoute: ClientSubmitRoute,
   ClientRequestsTicketIdRoute: ClientRequestsTicketIdRoute,
   ClientRequestsIndexRoute: ClientRequestsIndexRoute,
@@ -626,6 +687,7 @@ interface RecordsRouteChildren {
   RecordsActivityRoute: typeof RecordsActivityRoute
   RecordsDashboardRoute: typeof RecordsDashboardRoute
   RecordsLoginRoute: typeof RecordsLoginRoute
+  RecordsMessagesRoute: typeof RecordsMessagesRoute
   RecordsPendingRoute: typeof RecordsPendingRoute
   RecordsPublishedRoute: typeof RecordsPublishedRoute
   RecordsFormsFormIdRoute: typeof RecordsFormsFormIdRoute
@@ -635,6 +697,7 @@ const RecordsRouteChildren: RecordsRouteChildren = {
   RecordsActivityRoute: RecordsActivityRoute,
   RecordsDashboardRoute: RecordsDashboardRoute,
   RecordsLoginRoute: RecordsLoginRoute,
+  RecordsMessagesRoute: RecordsMessagesRoute,
   RecordsPendingRoute: RecordsPendingRoute,
   RecordsPublishedRoute: RecordsPublishedRoute,
   RecordsFormsFormIdRoute: RecordsFormsFormIdRoute,

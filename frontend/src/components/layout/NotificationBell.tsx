@@ -40,10 +40,8 @@ export function NotificationBell({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "relative rounded-lg p-2 transition-colors",
-          open
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          "header-icon-btn",
+          open ? "header-icon-btn-active" : "text-muted-foreground",
         )}
         aria-label="Notifications"
         aria-expanded={open}
@@ -88,6 +86,7 @@ export function NotificationBell({
                     <Link
                       to={item.to}
                       {...(item.params ? { params: item.params } : {})}
+                      {...(item.search ? { search: item.search } : {})}
                       onClick={() => setOpen(false)}
                       className="notification-item"
                     >

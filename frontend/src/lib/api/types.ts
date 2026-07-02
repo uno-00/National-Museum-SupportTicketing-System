@@ -97,4 +97,67 @@ export type ActivityRecord = {
   createdAt: string;
 };
 
+export type MessageableUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  division: string;
+};
+
+export type ConversationRecord = {
+  _id: string;
+  type: "direct" | "group" | "ticket";
+  title: string;
+  subtitle?: string;
+  isGlobal: boolean;
+  ticketId?: string | null;
+  ticketStatus?: TicketStatus | null;
+  ticketTitle?: string;
+  threadParticipants?: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string;
+  lastSenderName: string;
+  otherUser?: MessageableUser;
+};
+
+export type MessageMention = {
+  userId: string;
+  userName: string;
+};
+
+export type ConversationMessageRecord = {
+  _id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: Role;
+  body: string;
+  mentions?: MessageMention[];
+  isSystem?: boolean;
+  createdAt: string;
+};
+
+export type MentionRecord = {
+  _id: string;
+  conversationId: string;
+  messageId: string;
+  fromUserId: string;
+  fromUserName: string;
+  fromUserRole: Role | string;
+  toUserId: string;
+  preview: string;
+  createdAt: string;
+};
+
+export type PokeRecord = {
+  _id: string;
+  fromUserId: string;
+  fromUserName: string;
+  fromUserRole: Role | string;
+  toUserId: string;
+  conversationId: string | null;
+  createdAt: string;
+};
+
 export type FormReviewDecision = "approved" | "disapproved";

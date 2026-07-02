@@ -6,6 +6,7 @@ import { authRouter } from "./routes/auth.js";
 import { formsRouter } from "./routes/forms.js";
 import { recordsRouter } from "./routes/records.js";
 import { ticketsRouter } from "./routes/tickets.js";
+import { messagesRouter } from "./routes/messages.js";
 import { uploadsRouter, uploadsStaticPath } from "./routes/uploads.js";
 
 export function createApp() {
@@ -35,6 +36,7 @@ export function createApp() {
   app.use("/api/forms", formsRouter);
   app.use("/api/records", recordsRouter);
   app.use("/api/tickets", ticketsRouter);
+  app.use("/api/messages", messagesRouter);
   app.use("/api/uploads", uploadsRouter);
 
   app.use(errorHandler);

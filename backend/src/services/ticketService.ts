@@ -70,6 +70,9 @@ export async function createTicketFromClient(
     summary: `Request ${ticket.ticketNumber} submitted — pending admin approval`,
   });
 
+  const { ensureTicketConversation } = await import("./ticketConversationService.js");
+  await ensureTicketConversation(ticket._id.toString());
+
   return ticket;
 }
 
@@ -158,6 +161,9 @@ export async function approveTicket(actor: AuthUser, id: string) {
     summary: `Request ${ticket.ticketNumber} approved`,
   });
 
+  const { syncTicketConversationParticipants } = await import("./ticketConversationService.js");
+  await syncTicketConversationParticipants(ticket._id.toString());
+
   return ticket;
 }
 
@@ -207,6 +213,9 @@ export async function assignTicket(actor: AuthUser, id: string, assigneeIds: str
     summary: `Request ${ticket.ticketNumber} assigned to ${users.map((u) => u.name).join(", ")} — in progress`,
     meta: { assigneeIds },
   });
+
+  const { syncTicketConversationParticipants } = await import("./ticketConversationService.js");
+  await syncTicketConversationParticipants(ticket._id.toString());
 
   return ticket.populate("assignedTo", "name email division");
 }
@@ -301,6 +310,9 @@ export async function clientConfirmResolution(user: AuthUser, id: string, satisf
       ? `Client confirmed resolution for ${ticket.ticketNumber}`
       : `Client reopened ${ticket.ticketNumber}`,
   });
+
+  const { setTicketConversationClosedState } = await import("./ticketConversationService.js");
+  await setTicketConversationClosedState(ticket._id.toString(), satisfied);
 
   return ticket;
 }
